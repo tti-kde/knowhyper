@@ -1,0 +1,56 @@
+# @package _global_
+defaults:
+  - biored_baseline
+  - /knowhyper_text_serializer: definitions
+  - override /knowledge: knowhyper
+  # BioRED-tuned re-ranking, NOT plain `caching` (which is the ChemProt profile).
+  # Inheriting `caching` here left disease_protein/protein_protein/regulation
+  # unweighted and dropped BioRED DIRECT coverage from 12.0% to 2.4%; the five
+  # arms below inherit this file, so all six share the fix.
+  - override /knowhyper_retriever: caching_biored
+  - _self_
+
+knowledge:
+  collator:
+    _target_: knowhyper.ieforge.text_collator.PairAwareTextKnowledgeCollator
+    require_prompts: false
+    feature_channels: []
+    max_length: ${task.max_length}
+    max_knowledge_tokens: 128
+    min_source_tokens: 256
+    mode: definitions
+  pipeline:
+    query_builder:
+      _target_: knowhyper.ieforge.biored_query_builder.BioREDQueryBuilder
+      field: text
+      task: biored_pair
+      metadata_fields: [dataset, split, id]
+      include_target_roles: true
+    injector:
+      encoder: null
+      integrator: null
+      derive_id_namespaces: true
+      mention_type_map:
+        ChemicalEntity: drug
+        GeneOrGeneProduct: protein
+        DiseaseOrPhenotypicFeature: disease
+        CHEMICAL: null
+        GENE-Y: null
+        GENE-N: null
+        # Vestigial: BioRED emits only ChemicalEntity / GeneOrGeneProduct /
+        # DiseaseOrPhenotypicFeature (verified over the full test split of
+        # tti-kde/biored@f86f09be), so this entry never fires and linking is
+        # identical with or without it. It is here because mention_type_map is
+        # folded into `linker_id` and therefore into the cache fingerprint:
+        # dropping it would give the text arms a different fingerprint from
+        # `khp_biored_xattn`, which carries it. Keeping the maps byte-identical
+        # is what lets the two families share one cache. Removing it from the
+        # fusion arm instead would re-fingerprint the completed biored_ev runs.
+        Drug: null
+      linker:
+        strict_type_match: true
+      retriever:
+        preparation_schema: biored_pair_ids_namespaces_roles_v1
+        provenance_schema: linked_mentions_role_v1
+        inner:
+          provenance_schema: linked_mentions_role_v1

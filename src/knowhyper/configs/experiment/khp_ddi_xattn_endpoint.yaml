@@ -1,0 +1,35 @@
+# @package _global_
+# DDI endpoint-only control.
+#
+# Inherits khp_ddi_xattn_ev so retrieval, entity view, feature store, backbone,
+# trainer, gate and batch settings are identical -- the SubHG fingerprint is
+# unchanged, so the recorded comparator cells stay valid. Three things change:
+#   1. encoder    -> endpoint_only (seed vectors only; no AllSet, no neighbors)
+#   2. integrator -> feature (the model's pre-encoded token path, not incidence)
+#   3. feature_channels -> TensorFeatureChannel
+#
+# (3) is not optional. The khp_*_xattn root REPLACES the knowhyper.yaml channel
+# list with IncidenceChannel alone, so an endpoint arm that inherits it emits
+# node_embeds that nothing collates, and training dies with "knowledge keys
+# absent from batch but require_knowledge=True". Caught by a 2-cell smoke test
+# before the real submission; the batch_key names must match the model's
+# NODE_KEY / NODE_MASK_KEY.
+#
+# hde_enabled is off: HDE conditions the V->E injection on membership roles and
+# this arm has no hyperedges, so those parameters could never receive gradient.
+defaults:
+  - khp_ddi_xattn_ev
+  - override /knowhyper_encoder: endpoint_only
+  - override /knowhyper_integrator: feature
+  - _self_
+
+model:
+  hde_enabled: false
+
+knowledge:
+  collator:
+    feature_channels:
+      - _target_: ieforge.knowledge.channels.features.TensorFeatureChannel
+        specs:
+          - {source_key: node_embeds, batch_key: knowledge_node_embeds, pad_dim: 0, required: false}
+          - {source_key: node_mask, batch_key: knowledge_node_mask, pad_dim: 0, required: false}

@@ -1,0 +1,8 @@
+# @package _global_
+# Fixed cumulative NER arm: #220 second-segment entity text as the frozen first pass,
+# followed by #231's unchanged ev_warm baseline-preserving late-logit verifier.
+defaults:
+  - khp_span_late_ev_warm
+  - /knowhyper_text_serializer: definitions_ner
+  - _span_late_text_sidecar
+  - _self_

@@ -1,0 +1,9 @@
+_target_: ieforge.models.bioredirect.BioREDirectModel
+name: bioredirect
+model_name: michiyasunaga/BioLinkBERT-base
+tokenizer_name: michiyasunaga/BioLinkBERT-base
+relation_label_count: 9
+novelty_label_count: 3
+direction_label_count: 4
+soft_prompt_len: 0
+num_soft_prompt: 1

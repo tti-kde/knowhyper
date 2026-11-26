@@ -1,0 +1,92 @@
+# @package knowledge.pipeline.injector.text_serializer
+#
+# R2b shuffled control: identical frame, field names, hyperedge count and
+# connectivity; every semantics/polarity VALUE is replaced by a different member
+# of the vocabulary below.
+#
+# This is R2b's PRIMARY control, not off_short. R2a's sham arm showed the frame
+# alone moves DDI as much as real text does: against the same off_short control,
+# sham (definition body -> [MASK], role tag + mention kept) scored +0.0065 p=.343
+# and the real-text arm +0.0073 p=.299 (docs/reports/data/re_r2a_c1n_n10).
+# So "R2b - off_short" cannot separate typed structure from the effect of wrapping
+# tokens in [HG]; "R2b - shuffled" can.
+#
+# The direct C1n - sham figure (+0.0007 p=.885) points the same way but is NOT a
+# clean single-variable contrast -- that aggregate notes the sham is
+# audience=publishable while C1n is legacy, so it differs in two ways. The
+# same-control comparison above is the load-bearing evidence.
+#
+# Every field is repeated from serialized_subhg.yaml rather than composed via
+# `defaults:`, matching definitions_internal.yaml. Keep the two in sync: only
+# shuffle_values/shuffle_seed may differ, or the contrast stops being
+# single-variable (pinned by tests/ieforge/test_serialized_subhg_config.py).
+_target_: knowhyper.pipeline.subhg_serialization.SerializedSubHGSerializer
+max_hyperedges: 3
+include_polarity: true
+shuffle_values: true
+shuffle_seed: 0
+
+# The replacement pools must contain EVERY value live retrieval emits. A value
+# missing here can never be drawn as a replacement, so it appears only in the
+# treated arm and each replacement standing in for it becomes a marker pointing
+# back at one true value -- an invertible relabelling rather than destruction of
+# the type signal. The serializer fails closed on anything outside these lists.
+#
+# This is the union of encoders/vocab.py's SEMANTICS_VOCAB (curated from primehkg
+# builders, 11 values) and REDAF_SEMANTICS_VOCAB (frequency-ordered, built from the
+# real ChemProt cache, 40 values). SEMANTICS_VOCAB alone would abort ~14% of
+# ChemProt and ~51% of BioRED instances on the fail-closed guard. Kept explicit
+# here so a vocab.py edit cannot silently change the corruption scheme.
+#
+# This pool is only the FALLBACK for instances that carry fewer than two distinct
+# values; multi-valued instances draw replacements from their own observed values,
+# because pool membership does not prove a value is producible. `pathway_membership`
+# is omitted for exactly that reason: it appears in no primehkg builder and in none
+# of 4.48M sampled hyperedges, so emitting it would mark the control outright.
+semantics_vocabulary:
+  - moa_triad
+  - contraindication
+  - indication
+  - exposure_disease
+  - drug_disease_phenotype
+  - drug_drug
+  - protein_protein
+  - entity_attribute
+  - regulation
+  - drug_protein
+  - bioprocess_protein
+  - molfunc_protein
+  - cellcomp_protein
+  - disease_protein
+  - anatomy_protein_present
+  - pathway_protein
+  - molfunc_molfunc
+  - ae_drug_phenotype
+  - anatomy_protein_absent
+  - reaction_event
+  - protein_protein_bundle
+  - exposure_exposure
+  - protein_complex
+  - bioprocess_bioprocess
+  - disease_phenotype_context
+  - exposure_bioprocess
+  - pathway_pathway
+  - cellcomp_cellcomp
+  - drug_combination
+  - exposure_molfunc
+  - exposure_protein
+  - phenotype_protein
+  - disease_protein_bundle
+  - protein_disease_bundle
+  - disease_disease
+  - anatomy_anatomy
+  - phenotype_phenotype
+  - off_label_use
+  - disease_phenotype_negative
+  - drug_disease_shared_target_bundle
+  - exposure_cellcomp
+# HyperedgeRef.polarity defaults to the literal "unknown", which POLARITY_VOCAB
+# deliberately folds into <unk>, so it must be listed explicitly.
+polarity_vocabulary: [positive, negative, undirected, unknown]
+
+required_provenance_schema: linked_mentions_role_v1

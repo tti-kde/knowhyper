@@ -1,0 +1,6 @@
+# @package knowledge.pipeline.injector.encoder.feature_store
+# Single-vector PrimeHKGFeatureStore: loads the vector_node_v1 sidecar embeddings.
+# This is the default store used by allset (and structure_only) encoders.
+_target_: knowhyper.ieforge.primehkg_backend.PrimeHKGFeatureStore
+dataset: ${knowledge.dataset}
+dim: 16

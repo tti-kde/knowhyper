@@ -1,0 +1,24 @@
+# @package _global_
+# DDI EV with the SMILES attribute channel masked out.
+#
+# The modality control for Appendix F. `skip_modalities` drops attr nodes at
+# entity-view index build time, which happens AFTER raw SubHG retrieval, so this
+# arm shares the `khp_ddi_xattn_ev` cache fingerprint and differs from `ev_cold`
+# in exactly one thing: whether attr:smiles nodes exist in the augmented graph.
+#
+# DDI is the dataset where this is worth measuring: attr:smiles takes 23.2% of
+# knowledge cross-attention here (docs/reports/data/re_attention_2026_08_01/
+# shares_ddi.txt), the largest attribute channel on the dataset where knowledge
+# actually helps. The sibling `sequence` control is NOT defined for DDI --
+# attr:sequence takes 0.6% there because drugs carry no protein sequences, so
+# masking it would re-measure a coverage gap rather than test a channel.
+defaults:
+  - khp_ddi_xattn_ev
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      entity_view_augmenter:
+        index:
+          skip_modalities: ["name", "smiles"]

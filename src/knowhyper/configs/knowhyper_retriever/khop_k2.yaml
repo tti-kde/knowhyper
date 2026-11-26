@@ -1,0 +1,6 @@
+# @package knowledge.pipeline.injector.retriever
+# k-hop (k=2) candidate expansion around linked seeds.
+_target_: knowhyper.ieforge.primehkg_backend.PrimeHKGRetriever
+dataset: ${knowledge.dataset}
+candidate_mode: khop_k2
+top_k: 64

@@ -1,0 +1,47 @@
+# @package knowledge.pipeline.injector.text_serializer
+#
+# C1n (#140): the same retrieval as C1, but a node with no definition falls back
+# to its KG name instead of contributing nothing.
+#
+# Why this arm exists. C1 answers "does adding an entity *description* suffice?"
+# — its name exclusion protects that question, because names exist on nearly
+# every node and folding them in pins definition coverage near 100% and destroys
+# the independent variable. That exclusion is specific to C1. `R2a - OFF-short`
+# measures presence-vs-absence of TEXT, so the stronger counter-hypothesis
+# "adding KG-derived text suffices" needs an arm that is not artificially
+# starved of the most basic text the KG has.
+#
+# The name comes from the CORE NODE TABLE, which has one for 100% of nodes
+# (137,587/137,587 in v0.12.3, including all 7,957 drug nodes). It is NOT read
+# from node_features_text: that features sidecar's short_label rows cover
+# ontology entities but not PrimeKG drug nodes, so filtering it yields zero
+# names for DDI.
+#
+# audience: legacy is deliberate and not a weakening. The licence registry
+# answers one question — may this text leave the machine? This arm never
+# redistributes (raw text stays in a 0600 cache excluded from Git and ABCI
+# snapshots; only aggregates reach the paper), so the registry has no question
+# to answer here. Routing around it also avoids editing registry verdicts, which
+# would change the digest folded into every serializer fingerprint and
+# invalidate already-completed arms' caches.
+_target_: knowhyper.pipeline.text_serialization.RetrievedDefinitionsSerializer
+evidence_index:
+  _target_: knowhyper.pipeline.text_serialization.load_definition_evidence_index
+  # Raw node_features_text only. Embedding sidecars are never decoded.
+  features_dir:
+    _target_: knowhyper.features.modality_index.resolve_text_features_dir
+    revision: ${knowhyper.text_features_commit}
+  modalities: [description, definition]
+  expected_commit: ${knowhyper.text_features_commit}
+  expected_inputs_fingerprint: ${knowhyper.text_features_fingerprint}
+modalities: [description, definition]
+node_name_index:
+  _target_: knowhyper.pipeline.text_serialization.NodeNameIndex
+  core: ${knowledge.dataset}
+license_registry: null
+audience: legacy
+raw_text_cache_mode: restricted
+cache_root: ${knowhyper.storage_root}/cache/text/definitions_with_names
+source_revision: ${knowhyper.text_features_revision}@${knowhyper.text_features_commit}
+source_fingerprint: ${knowhyper.text_features_fingerprint}
+required_provenance_schema: linked_mentions_role_v1

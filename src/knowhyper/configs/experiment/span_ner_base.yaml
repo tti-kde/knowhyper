@@ -1,0 +1,61 @@
+# @package _global_
+# #220 Table 6 shared comparator: the span-only backbone, BC5CDR-Chem.
+#
+# WHY THIS EXISTS rather than reusing #218's `shared_zero`. Phase 0.3 asked whether
+# `khp_span_ner_edge` + `knowledge_control=zero` could serve as this arm. Its
+# FORWARD PASS does match -- `zero` returns the inner span baseline's logits before
+# the gate -- which is exactly what made sharing look safe. But that arm is still
+# the fusion model: `__init__` builds cross_attn, gate, span_gate and the AllSet
+# encoder regardless of the control, and `difflr` hands every non-`inner.` parameter
+# to a second optimizer group at 10x the base LR. Measured: ~11.8M scalars training
+# at 10x that this arm does not have. The gate requires identical initialization AND
+# optimizer, so it fails on the config alone.
+# See tests/test_span_ner_text_baseline_gate.py.
+#
+# TRAINER: this arm takes `benchmark_nolog`, NEVER `difflr_benchmark_nolog`. A plain
+# span classifier has no `model.inner.` prefix, so `BACKBONE_PREFIX` matches nothing
+# and difflr would train its ENTIRE pretrained backbone at 10x -- silently, with a
+# plausible-looking score. `knowhyper.span_text_campaign.trainer_for` enforces this.
+#
+# BACKBONE: pass `model=<backbone>_span_classifier` per cell. ieforge's `span_ner`
+# experiment defaults to modernbert_span_classifier, so an omitted `model=` does not
+# fail -- it silently trains a different backbone than the one being reported.
+#
+# MATCHED TO THE TEXT ARMS on everything that is not the knowledge route: task,
+# dataset, loss, metric, span representation, decoder, batch size, workers, and the
+# same proposal-derived candidate lattice. The only difference is that no second
+# segment is built and no knowledge branch exists.
+defaults:
+  - _run_defaults
+  - override /task: span_ner
+  - override /dataset: blurb_ner_bc5cdr_chem
+  - override /loss: focal
+  - override /metric: entity_f1
+  - _self_
+
+dataset:
+  # RESTORE ieforge's span-NER default. `_run_defaults` pins batch_size: 64, but
+  # its own header scopes that to "every RE experiment" -- 64 was measured for RE,
+  # and inheriting it here silently undertrains the span arms.
+  #
+  # #202's recorded span baselines are bs=16 (aggregate.txt header:
+  # `bs=16 num_workers=4`) and score 0.9247 test f1 on BC5CDR-Chem for BOTH
+  # backbones. At 64 the #220 Phase 1 smoke measured, at seed 0:
+  #     base biolinkbert/chem  0.7214  (-0.203 vs #202)
+  #     base pubmedbert/chem   0.8968  (-0.028)
+  #     text_real biolinkbert  0.9299  (+0.005 -- unaffected)
+  # The damage is ARM-DEPENDENT: the text arms land on #202's number so nothing
+  # looks broken, while `base` alone sinks and `text_real - base` inflates to a
+  # fake +0.21. Validation does not reveal it either -- pubmedbert/chem/base
+  # reached val 0.9244 with test 0.8968.
+  batch_size: 16
+
+task:
+  max_span_width: 12
+  threshold: 0.5
+  decoder: max_total_score
+
+model:
+  # Pinned for the same reason the text arms pin it: Table 6 compares two routes,
+  # and a silent upstream default change must not move one route only.
+  span_rep_mode: start_end

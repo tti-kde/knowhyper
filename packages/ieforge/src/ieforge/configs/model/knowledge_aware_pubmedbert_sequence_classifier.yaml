@@ -1,0 +1,10 @@
+_target_: ieforge.knowledge.integration.models.KnowledgeAwareModel
+_recursive_: false
+name: knowledge_aware_pubmedbert_seq
+tokenizer_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+inner:
+  _target_: ieforge.models.hf_sequence_classifier.HFSequenceClassifier
+  model_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+  name: pubmedbert_seq
+prompt_key: knowledge_prompt_embeds
+prompt_attention_mask_key: knowledge_prompt_attention_mask

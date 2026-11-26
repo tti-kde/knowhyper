@@ -1,0 +1,19 @@
+# @package _global_
+# BC5CDR-Disease entity-view knowledge arm, strict_type_match ON.
+#
+# = khp_ner_ev_bc5cdr_disease + strict linking, and it restates the disease retriever profile
+# for the same reason khp_ner_strict_bc5cdr_disease does: inheriting a chem arm would put the
+# CHEMICAL profile on a disease dataset silently.
+#
+# Must agree with khp_ner_strict_bc5cdr_disease on retrieval -- they share one cache, and the
+# ev-vs-edge contrast is only single-variable if they do.
+defaults:
+  - khp_ner_ev_bc5cdr_disease
+  - override /knowhyper_retriever: caching_ner_disease
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      linker:
+        strict_type_match: true

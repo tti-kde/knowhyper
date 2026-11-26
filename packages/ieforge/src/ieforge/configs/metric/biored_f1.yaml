@@ -1,0 +1,6 @@
+_target_: ieforge.metrics.biored.BioREDF1
+name: biored_f1
+negative_label: None
+monitor: val/f1
+monitor_mode: max
+monitor_label: f1

@@ -1,0 +1,36 @@
+# @package _global_
+# KnowHyper DDI (drug-drug interaction) RE, soft-prompt integrator (the khp_re
+# analog for DDI). Both entities are drugs (mention_type_map {Drug: drug}), the
+# negative label is DDI-false, retrieval boosts drug_drug.
+defaults:
+  - override /task: re_blurb
+  - override /dataset: ddi
+  - override /loss: sequence_cross_entropy
+  - override /metric: relation_f1
+  - override /model: knowledge_aware_pubmedbert_sequence_classifier
+  - override /knowledge: knowhyper
+  - override /knowhyper_encoder: allset
+  - override /knowhyper_retriever: caching
+  - _self_
+
+task:
+  context_strategy: full_text
+  window_sentences: 0
+  negative_label: "DDI-false"
+
+metric:
+  negative_label: "DDI-false"
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Drug: drug
+        CHEMICAL: null
+        GENE-Y: null
+        GENE-N: null
+      retriever:
+        inner:
+          semantics_weight:
+            drug_drug: 5.0
+            drug_combination: 2.0

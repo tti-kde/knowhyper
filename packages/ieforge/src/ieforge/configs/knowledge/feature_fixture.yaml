@@ -1,0 +1,61 @@
+# @package _global_
+knowledge:
+  pipeline:
+    _target_: ieforge.knowledge.core.pipeline.KnowledgePipeline
+    source:
+      name: fixture_corpus
+      _target_: ieforge.knowledge.backends.corpus.FixtureCorpusSource
+    builder:
+      name: corpus
+      _target_: ieforge.knowledge.backends.corpus.CorpusBuilder
+      embedder:
+        name: hashing
+        _target_: ieforge.knowledge.backends.corpus.HashingEmbedder
+        dim: 256
+    retriever:
+      name: dense
+      _target_: ieforge.knowledge.backends.retrievers.DenseRetriever
+      embedder:
+        name: hashing
+        _target_: ieforge.knowledge.backends.corpus.HashingEmbedder
+        dim: 256
+      top_k: 5
+    injector:
+      name: constant_graph_features
+      _target_: ieforge.knowledge.backends.features.ConstantGraphFeatureInjector
+      node_count: 3
+      hyperedge_count: 2
+      hidden_size: 8
+    query_builder:
+      name: attribute
+      _target_: ieforge.knowledge.integration.query_builders.AttributeQueryBuilder
+      field: question
+      metadata_fields:
+        - id
+  collator:
+    enabled: true
+    train_enabled: true
+    eval_enabled: false
+    name: knowledge
+    _target_: ieforge.knowledge.integration.collators.KnowledgeCollator
+    pipeline: ${knowledge.pipeline}
+    require_prompts: false
+    feature_channels:
+      - name: tensor_feature
+        _target_: ieforge.knowledge.channels.features.TensorFeatureChannel
+        specs:
+          - source_key: node_embeds
+            batch_key: knowledge_node_embeds
+            pad_dim: 0
+          - source_key: node_attention_mask
+            batch_key: knowledge_node_attention_mask
+            pad_dim: 0
+          - source_key: hyperedge_embeds
+            batch_key: knowledge_hyperedge_embeds
+            pad_dim: 0
+          - source_key: hyperedge_attention_mask
+            batch_key: knowledge_hyperedge_attention_mask
+            pad_dim: 0
+          - source_key: graph_embeds
+            batch_key: knowledge_graph_embeds
+            pad_dim: null

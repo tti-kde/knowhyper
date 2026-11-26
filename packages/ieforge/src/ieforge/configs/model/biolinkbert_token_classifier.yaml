@@ -1,0 +1,4 @@
+name: biolinkbert
+_target_: ieforge.models.hf_token_classifier.HFTokenClassifier
+model_name: michiyasunaga/BioLinkBERT-base
+tokenizer_name: michiyasunaga/BioLinkBERT-base

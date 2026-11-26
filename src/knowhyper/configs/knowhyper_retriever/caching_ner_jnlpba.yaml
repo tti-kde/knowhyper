@@ -1,0 +1,13 @@
+# @package knowledge.pipeline.injector.retriever
+# JNLPBA is exposed by the upstream BLURB loader as one collapsed ``entity`` type.
+# Do not pretend that this label is a PrimeHKG node type: the underlying mentions mix
+# protein, DNA, RNA, cell and cell-line entities.  Linking therefore remains untyped.
+#
+# The retrieval ranking reuses the measured protein/gene profile because proteins are
+# the PrimeHKG-covered centre of this corpus and because uniform retrieval is dominated
+# by anatomy-protein edges.  This is a preregistered starting profile, not a tuned one.
+# Before any end-task fit, report link coverage and linked node-type distribution; a
+# degenerate one-type or near-zero-coverage result closes the knowledge arm.
+defaults:
+  - caching_ner_gene
+  - _self_

@@ -1,0 +1,39 @@
+# @package _global_
+# BioRED STRUCTURE-ONLY arm with SURFACE-FALLBACK linking.
+#
+# Structure-only counterpart to `khp_biored_xattn_ev_surface`. Both exist because
+# id-only linking leaves BioRED with a coverage cliff the other datasets do not
+# have -- measured over the whole validation split of `970fbf152d120495`
+# (6,659 files, all present), counting sub-hypergraphs with zero nodes:
+#
+#     ChemProt   0.0%
+#     DDI        4.0%
+#     BioRED    46.2%   (3,079 instances)
+#
+# BioRED rows are contiguous by document, so the empties clump: the longest
+# consecutive-empty run is 325 instances and 10 of 104 aligned 64-batches are
+# entirely empty. Validation does not shuffle, so `require_knowledge: true` aborts
+# in validation_step every epoch. That is how an 80-cell submission was lost on
+# 2026-07-27; see docs/EXPERIMENTS.md section 4.1.
+#
+# Needs its OWN precompute: surface_tag changes linker_id, hence the retrieval
+# fingerprint. That is deliberate -- it keeps every recorded id-only BioRED result
+# valid instead of silently reinterpreting it.
+#
+# CONFOUND, inherited from the EV surface arm and measured there: surface forms are
+# appended unconditionally, so this is NOT a targeted repair of the empty
+# instances. Instances that already linked also gain candidate seeds. Stratify by
+# the id-only seed count (0 / 1 / 2) rather than reporting one aggregate, or a gain
+# on the empty stratum and a loss on the both-linked stratum cancel invisibly.
+defaults:
+  - khp_biored_xattn
+  - _self_
+
+knowledge:
+  pipeline:
+    query_builder:
+      surface_fallback: true
+      # Folded into linker_id by knowhyper_retriever/caching.yaml so this arm gets
+      # its own retrieval cache. Must be set together with surface_fallback --
+      # pinned by tests/ieforge/test_biored_query_builder.py.
+      surface_tag: "#surface=true"

@@ -1,0 +1,25 @@
+# @package _global_
+# BioRED entity view arm: khp_biored_xattn + entity_view_augmenter from
+# v0.12.3 core tables. Adds attr:text / attr:smiles / attr:sequence nodes
+# for drug, protein, AND disease (disease has description + definition in
+# v0.12.3 features). Mirrors khp_re_xattn_ev / khp_ddi_xattn_ev.
+defaults:
+  - khp_biored_xattn
+  - override /knowhyper_feature_store: composite
+  - _self_
+
+
+knowledge:
+  pipeline:
+    injector:
+      entity_view_augmenter:
+        _target_: knowhyper.pipeline.entity_view_augmenter.EntityViewAugmenter
+        index:
+          _target_: knowhyper.pipeline.entity_view_augmenter.build_entity_view_index
+          nodes_iter:
+            _target_: knowhyper.pipeline.entity_view_augmenter.load_core_nodes_iter
+            hub_repo_id: ${knowhyper.dataset_hub_repo}
+            revision: ${knowhyper.dataset_revision}
+            expected_fingerprint: ${knowhyper.dataset_fingerprint}
+          source_fingerprint: ${knowhyper.dataset_fingerprint}
+          skip_modalities: ["name"]

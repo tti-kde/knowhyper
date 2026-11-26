@@ -1,0 +1,14 @@
+# @package _global_
+# Truncation-matched control for ner_retrieved_text_bc5cdr_disease.
+#
+# NOT the same as `base`: it inherits the treated arm's retrieval and its source
+# truncation, then emits zero knowledge tokens (`mode: off_short`). That isolates
+# "the text content helped" from "the source got shorter", which a comparison
+# against plain `base` cannot do.
+defaults:
+  - ner_retrieved_text_bc5cdr_disease
+  - _self_
+
+knowledge:
+  collator:
+    mode: off_short

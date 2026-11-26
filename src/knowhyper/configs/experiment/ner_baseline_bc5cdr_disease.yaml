@@ -1,0 +1,6 @@
+# @package _global_
+# Knowledge-OFF NER baseline for BC5CDR-Disease (disease NER).
+defaults:
+  - ner_baseline
+  - override /dataset: blurb_ner_bc5cdr_disease
+  - _self_

@@ -1,0 +1,52 @@
+# @package _global_
+# NER entity_view: attribute sub-HG augmentation for BC5CDR-Chem (default).
+# Inherits khp_ner (same task/model/retrieval) but:
+#   1. feature_store → composite (routes attr:* nodes to modality embeddings)
+#   2. entity_view_augmenter constructed from the pinned core's entity_view tables
+#
+# The pin is INHERITED from knowledge/knowhyper_ner.yaml (core 0.12.13 / features
+# 0.12.14). No local `knowhyper:` block here -- an experiment config outranks the
+# group config, so a literal at this level means bumping the group moves `khp_ner`
+# and leaves `khp_ner_ev` behind, and the two arms get compared across different
+# graphs. That is the defect #169 removed from the four RE `*_ev` configs.
+#
+# #169 kept a local 0.12.3 pin on THIS arm on the grounds that (a) 0.12.3 is the
+# FLOOR where entity_view tables first exist and (b) the recorded NER EV results
+# were measured on it, so moving would break comparability. Both facts are true --
+# `2026-07-19-ner-prediction-two-pass-report.md` does record v0.12.3 / e4460fcf --
+# but the conclusion does not follow here:
+#
+#   * The floor is satisfied. 0.12.13 has the same `views.json`, schema `views_v1`
+#     and identical view definitions (verified in #169 itself before it removed the
+#     override from the RE EV arms). A floor is a minimum, not a pin.
+#   * Comparability is already gone, deliberately. Every recorded NER EV number was
+#     measured with `semantics_weight: null`, and 63% of that retrieval budget went
+#     to drug-consequence edges (measured; see caching_ner_chem.yaml). The weighted
+#     profiles re-fingerprint the cache regardless of the core pin, so no new NER
+#     result can be compared against those records whatever we do here. Pinning
+#     0.12.3 would buy comparability with a baseline this PR has already retired,
+#     at the cost of splitting `khp_ner` and `khp_ner_ev` across two cores.
+#   * The old records are not lost: they stay valid as what they are -- results on
+#     0.12.3 with uniform retrieval. Re-running them is tracked in docs/EXPERIMENTS.md 3.
+#
+# So: inherit. If the NER chain should move back, move it in
+# knowledge/knowhyper_ner.yaml so every NER arm follows together.
+defaults:
+  - khp_ner
+  - override /knowhyper_feature_store: composite
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      entity_view_augmenter:
+        _target_: knowhyper.pipeline.entity_view_augmenter.EntityViewAugmenter
+        index:
+          _target_: knowhyper.pipeline.entity_view_augmenter.build_entity_view_index
+          nodes_iter:
+            _target_: knowhyper.pipeline.entity_view_augmenter.load_core_nodes_iter
+            hub_repo_id: ${knowhyper.dataset_hub_repo}
+            revision: ${knowhyper.dataset_revision}
+            expected_fingerprint: ${knowhyper.dataset_fingerprint}
+          source_fingerprint: ${knowhyper.dataset_fingerprint}
+          skip_modalities: ["name"]

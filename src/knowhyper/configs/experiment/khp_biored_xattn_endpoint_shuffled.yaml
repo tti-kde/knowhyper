@@ -1,0 +1,36 @@
+# @package _global_
+# BIORED endpoint-only control with each endpoint shuffled to a same-type stand-in.
+#
+# Identical to khp_biored_xattn_endpoint except that the encoder replaces each seed
+# vector with that of a DIFFERENT entity of the SAME node type. Type and coverage
+# are held fixed by construction; only identity is destroyed.
+defaults:
+  - khp_biored_xattn_ev_surface
+  - override /knowhyper_encoder: endpoint_only_shuffled
+  - override /knowhyper_integrator: feature
+  - _self_
+
+model:
+  hde_enabled: false
+
+knowledge:
+  collator:
+    # The khp_*_xattn root REPLACES knowhyper.yaml's channel list with
+    # IncidenceChannel alone; without restoring a tensor channel the encoder's
+    # node_embeds reach nothing and training dies with "knowledge keys absent
+    # from batch but require_knowledge=True".
+    feature_channels:
+      - _target_: ieforge.knowledge.channels.features.TensorFeatureChannel
+        specs:
+          - {source_key: node_embeds, batch_key: knowledge_node_embeds, pad_dim: 0, required: false}
+          - {source_key: node_mask, batch_key: knowledge_node_mask, pad_dim: 0, required: false}
+  pipeline:
+    injector:
+      encoder:
+        # The dataset NAME as a literal: `${knowledge.dataset}` resolves to a
+        # CoreDataset object, not a string, so building the pool path from it
+        # fails with "unsupported operand type(s) for /: 'PosixPath' and
+        # 'CoreDataset'". Caught by the smoke test. A dataset literal cannot
+        # drift the way a fingerprint literal would -- this arm is per-dataset,
+        # and the fingerprint itself stays interpolated.
+        dataset: biored

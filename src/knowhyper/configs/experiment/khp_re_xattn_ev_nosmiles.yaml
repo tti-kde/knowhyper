@@ -1,0 +1,21 @@
+# @package _global_
+# ChemProt EV with the SMILES attribute channel masked out.
+#
+# Same construction as the DDI variant: `skip_modalities` drops attr nodes after
+# raw SubHG retrieval, so this shares the `khp_re_xattn_ev` cache fingerprint and
+# differs from `ev_cold` only in whether attr:smiles nodes exist.
+#
+# ChemProt is the weaker of the two tests -- attr:smiles takes 6.5% of knowledge
+# cross-attention here against DDI's 23.2% -- but it is included because ChemProt
+# is the dataset the paper reports as null for knowledge overall, so a SMILES
+# effect here would be informative in the opposite direction.
+defaults:
+  - khp_re_xattn_ev
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      entity_view_augmenter:
+        index:
+          skip_modalities: ["name", "smiles"]

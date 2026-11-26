@@ -1,0 +1,5 @@
+_target_: ieforge.metrics.pico_macro_f1.PICOMacroF1
+name: pico_macro_f1
+monitor: val/f1
+monitor_mode: max
+monitor_label: F1

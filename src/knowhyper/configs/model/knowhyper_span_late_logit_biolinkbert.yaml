@@ -1,0 +1,52 @@
+# BioLinkBERT span-level knowledge verifier (#218 second backbone).
+#
+# Field-identical to knowhyper_span_cross_attention_pubmedbert.yaml except for the
+# encoder checkpoint. The two must stay identical everywhere else: the campaign
+# reads `+attributes - Structure only` and `real - shuffled` WITHIN a backbone, so
+# a fusion hyperparameter that differs across backbones would confound the
+# between-backbone comparison with an architecture change.
+#
+# `tokenizer_name` (outer, used by the collator) and `inner.model_name` (the
+# encoder) must name the SAME checkpoint. Mixing a PubMedBERT tokenizer with a
+# BioLinkBERT encoder composes cleanly and trains to a plausible score, so this
+# pair is pinned by tests/ieforge/test_span_knowledge_backbones.py.
+#
+# Candidate JSONL is backbone-specific and must NOT be shared with the PubMedBERT
+# arm: the proposal distribution comes from a BioLinkBERT first pass.
+_target_: knowhyper.ieforge.span_late_logit_model.SpanLateLogitKnowledgeModel
+_recursive_: false
+name: knowhyper_span_late_logit
+freeze_inner: true
+tokenizer_name: michiyasunaga/BioLinkBERT-base
+hidden_size: 768
+num_heads: 8
+feature_dim: 768
+encoder_layers: 2
+encoder_heads: 4
+require_knowledge: true
+require_knowledge_per_instance: false
+# The gate/fusion knobs of the cross-attention model are absent on purpose: the late
+# head has no gate, so leaving them here would accept a sweep that changes nothing.
+# The A0 evidence encoder follows the ANCHOR's backbone by interpolation, so a PubMedBERT
+# anchor gets a PubMedBERT evidence encoder and a BioLinkBERT anchor a BioLinkBERT one.
+# Pinning one arm to a fixed checkpoint would make the other a cross-backbone hybrid and the
+# per-backbone comparison uninterpretable -- while training fine and reporting a plausible
+# score. `null` here means "no text encoder", which is correct for every non-text arm; the
+# model REFUSES `evidence_source=text` with a null name rather than falling back to a hash.
+evidence_source: graph
+evidence_encoder_name: null
+knowledge_control: real
+# DECLARED, not merely mentioned in a comment. Hydra composes `model` in struct mode, so an
+# undeclared key makes `model.pretrained_baseline_path=...` fail with
+# "Key 'pretrained_baseline_path' is not in struct" -- which is exactly how all five Phase 1
+# smoke cells died. `???` makes it MANDATORY: a cell that forgets to pass a frozen baseline
+# fails at composition instead of silently training an unfrozen random-init inner and
+# reporting a plausible number. Same mechanism as `pretrained_encoder_path: ???` on ev_warm.
+pretrained_baseline_path: ???
+inner:
+  _target_: ieforge.models.hf_span_classifier.HFSpanClassifier
+  model_name: michiyasunaga/BioLinkBERT-base
+  name: biolinkbert_span
+  max_span_width: 12
+  span_rep_mode: start_end
+  dropout: 0.1

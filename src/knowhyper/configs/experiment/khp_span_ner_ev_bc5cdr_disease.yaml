@@ -1,0 +1,14 @@
+# @package _global_
+# BC5CDR-Disease variant of the candidate-specific EV-cold arm.
+defaults:
+  - khp_span_ner_ev
+  - override /dataset: blurb_ner_bc5cdr_disease
+  - override /knowhyper_retriever: caching_ner_disease
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Chemical: null
+        Disease: disease

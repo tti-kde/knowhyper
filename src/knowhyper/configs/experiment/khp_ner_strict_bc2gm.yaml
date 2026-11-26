@@ -1,0 +1,29 @@
+# @package _global_
+# BC2GM (gene NER) structure-only knowledge arm, strict_type_match ON.
+#
+# = khp_ner_bc2gm + strict linking. Two overrides, both load-bearing:
+#
+#   /knowhyper_retriever: caching_ner_gene
+#     MUST be restated. Inheriting khp_ner_strict (a chem arm) would silently bring
+#     the CHEMICAL profile onto a gene dataset -- the BioRED regression in
+#     miniature: it composes cleanly, warns about nothing, and retrieves the wrong
+#     graph. Pinned by tests/ieforge/test_retriever_semantics_parity.py.
+#
+#   strict_type_match: true
+#     Unlike BC5CDR-Chem, this dataset's mention_type_map has two entries, so strict
+#     typing has wrong-type candidates to reject. Whether that changes the retrieved
+#     graph is a measurement (Gate 3 of the campaign plan), not an assumption.
+#
+# Shares its SubHG cache with khp_ner_ev_strict_bc2gm: entity-view augmentation runs
+# after raw retrieval, so precompute once per (dataset, strict) pair. Confirm with
+# `scripts/resolve_cache_fingerprint.py` rather than trusting a hash in a comment.
+defaults:
+  - khp_ner_bc2gm
+  - override /knowhyper_retriever: caching_ner_gene
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      linker:
+        strict_type_match: true

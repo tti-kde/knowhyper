@@ -1,0 +1,17 @@
+defaults:
+  - task: re_blurb
+  - dataset: chemprot
+  - model: modernbert_sequence_classifier
+  - metric: relation_f1
+  - trainer: default
+  - knowledge: default_none
+  - augmentor: default_none
+  - _self_
+
+ckpt_path: ???
+
+output_dir: outputs/${task.name}/${dataset.name}/${model.name}
+
+paths:
+  root_dir: ${oc.env:PWD}
+  output_dir: ${paths.root_dir}/${output_dir}

@@ -1,0 +1,56 @@
+# @package _global_
+#
+# `edge_top3_matched` on BioRED: structure-only fusion over the SAME 3 hyperedges the
+# GRAFT-style text arm serializes (#189).
+#
+# WHY THIS ARM EXISTS. The paper's same-evidence comparison is
+# `edge_top3 - graft_real`, and it is only a REPRESENTATION contrast if both arms
+# see identical evidence. `khp_biored_xattn_surface` encodes up to 64 hyperedges; the R2b
+# serializer keeps at most 3. Comparing those directly would confound
+# "typed structure needs a graph encoder" with an evidence budget of 64 vs 3 --
+# a null would be unattributable between the two.
+#
+# The selector is the SAME object the serializer delegates to
+# (`select_top_ranked`), so the two arms agree on edge IDs by construction rather
+# than because two sorts happen to match. The CPU gate hashes selected edge IDs on
+# a 100-instance sample from the raw cache and requires them equal.
+#
+# Structure-only on purpose: no entity view. Attribute hyperedges would otherwise
+# compete for the 3 slots, and the arm would stop being comparable to a text arm
+# that carries no attribute payload. The selector runs BEFORE augmentation in
+# `KnowHyperInjector.inject` for the same reason.
+#
+# Needs no new precompute: the raw top_k=64 cache is unchanged and shared with
+# `khp_biored_xattn_surface`; selection happens after the cache read.
+defaults:
+  - khp_biored_xattn_surface
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      # Unlike the ChemProt/DDI top3 arms, BioRED needs NO linker/provenance override,
+      # and the reason is REDUNDANCY, not a fingerprint hazard:
+      #
+      #   graph arm: khp_biored_xattn_surface_top3 -> khp_biored_xattn_surface ->
+      #     khp_biored_xattn, which already sets strict_type_match: true AND
+      #     provenance_schema: linked_mentions_role_v1 (khp_biored_xattn.yaml:78,83)
+      #   text arm:  biored_graft_style_real -> biored_serialized_subhg_surface ->
+      #     biored_serialized_subhg -> biored_retrieved_definitions, which sets the
+      #     same two (biored_retrieved_definitions.yaml:51,54)
+      #
+      # Both therefore converge on cache cb831d8592bc38aa as composed, and adding the
+      # keys here would re-assert values already inherited -- a no-op. Contrast
+      # ChemProt/DDI, whose fusion chains (khp_re_xattn / khp_ddi_xattn) set NEITHER
+      # key, which is why those two configs genuinely need the override.
+      #
+      # The invariant that actually matters and is easy to lose: BioRED must link
+      # STRICTLY on both arms, wherever that comes from. Check it with
+      # scripts/resolve_cache_fingerprint.py rather than by symmetry with the sibling
+      # configs. Pinned by tests/ieforge/test_graft_style_config.py.
+      subhypergraph_transform:
+        _target_: knowhyper.pipeline.subhg_selection.TopRankedHyperedgeSelector
+        # Must equal knowhyper_text_serializer/serialized_subhg.yaml's
+        # max_hyperedges, or the "same evidence" claim is false. Pinned by
+        # tests/ieforge/test_graft_style_config.py.
+        max_hyperedges: 3

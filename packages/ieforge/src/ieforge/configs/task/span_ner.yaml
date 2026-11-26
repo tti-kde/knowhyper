@@ -1,0 +1,7 @@
+_target_: ieforge.tasks.span_ner.SpanNERTask
+name: span_ner
+max_length: 512
+max_span_width: 12
+threshold: 0.5
+# max_total_score | greedy  (both emit flat, non-overlapping spans)
+decoder: max_total_score

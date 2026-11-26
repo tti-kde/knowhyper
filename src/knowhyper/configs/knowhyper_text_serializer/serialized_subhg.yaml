@@ -1,0 +1,19 @@
+# @package knowledge.pipeline.injector.text_serializer
+# R2b / C2: the retrieved typed sub-hypergraph rendered as canonical text.
+#
+# No license registry and no node_features_text: semantics, member roles and CTD
+# polarity are structural facts on HyperedgeRef, not licensed text payloads.
+_target_: knowhyper.pipeline.subhg_serialization.SerializedSubHGSerializer
+
+# NOT R2a's N=64. The collator splits the 128-token payload round-robin ACROSS
+# items, so the item count decides whether any single item survives intact: at 64
+# items each block gets 2 tokens and renders as "[ hg", which cuts the semantics
+# value off entirely and makes the treated and shuffled arms byte-identical.
+# R2a can afford N=64 only because it emits at most 2 items (head/tail).
+# One [HG] block is ~29-35 PubMedBERT tokens, so 3 fit in 128 with headroom;
+# tests/pipeline/test_subhg_serialization.py pins that whole blocks survive.
+max_hyperedges: 3
+
+include_polarity: true
+shuffle_values: false
+required_provenance_schema: linked_mentions_role_v1

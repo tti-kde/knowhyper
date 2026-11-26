@@ -1,0 +1,4 @@
+name: scibert
+_target_: ieforge.models.hf_token_classifier.HFTokenClassifier
+model_name: allenai/scibert_scivocab_uncased
+tokenizer_name: allenai/scibert_scivocab_uncased

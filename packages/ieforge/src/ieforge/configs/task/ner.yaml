@@ -1,0 +1,4 @@
+_target_: ieforge.tasks.ner.NERTask
+name: ner
+label_scheme: BIO
+max_length: 512

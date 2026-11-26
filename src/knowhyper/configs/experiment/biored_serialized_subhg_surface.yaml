@@ -1,0 +1,33 @@
+# @package _global_
+#
+# R2b on the SURFACE-FALLBACK cache: the same serialization, over the sub-HGs the
+# fusion arms can actually run on.
+#
+# WHY THIS ARM EXISTS. The id-only BioRED arms are not comparable to each other:
+# `edge`/`ev_cold` cannot run at all (46.2% of sub-HGs are empty, so
+# `require_knowledge: true` aborts in validation_step), while `biored_serialized_subhg`
+# runs fine because text arms have no graph encoder to starve. So the natural
+# reading -- "structure helped / text did not" -- would compare a surface-linked
+# fusion arm against an id-linked text arm, folding the linking change into the
+# injection-format contrast.
+#
+# This arm removes that confound: same retrieval cache (`e5b5ecf1b398f492`) as
+# `khp_biored_xattn_surface`, so `edge_surface` vs this is a single-variable
+# structure-vs-text contrast on identical graphs.
+#
+# Its own control remains `biored_serialized_shuffled`-style: the pre-registered
+# primary for R2b is serialized vs shuffled, not vs OFF, because the shuffled arm
+# holds token count and payload shape fixed.
+defaults:
+  - biored_serialized_subhg
+  - _self_
+
+knowledge:
+  pipeline:
+    query_builder:
+      surface_fallback: true
+      # Must be set together with surface_fallback -- it is what folds into
+      # linker_id so this arm reads the surface cache rather than silently
+      # retrieving id-only content under a surface name. Pinned by
+      # tests/ieforge/test_biored_query_builder.py.
+      surface_tag: "#surface=true"

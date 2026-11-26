@@ -1,0 +1,16 @@
+# @package _global_
+# bc2gm variant of span_ner_retrieved_text. Retrieval semantics are a DATASET property: this
+# profile must match what #218's edge arm for bc2gm uses, or the two routes read
+# different graphs and Table 6's comparison is void.
+defaults:
+  - span_ner_retrieved_text
+  - override /dataset: blurb_ner_bc2gm
+  - override /knowhyper_retriever: caching_ner_gene
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Chemical: null
+        Gene: protein

@@ -1,0 +1,77 @@
+# @package _global_
+# KnowHyper DDI (drug-drug interaction) RE with the GPU-batched cross-attention
+# knowledge integrator. Mirrors khp_re_xattn (chemprot) but for DDI: both entities
+# are drugs (mention_type_map {Drug: drug}), the negative label is DDI-false, and
+# retrieval boosts drug_drug (the DDI-relevant semantic) instead of drug_protein.
+# DDI has much better KG edge coverage than chemprot (drug_drug is DrugBank-derived,
+# ~64% of node-present positive pairs already have the edge vs ~35% for chemprot).
+defaults:
+  # Shared mandatory run settings (batch_size/num_workers). FIRST because Hydra
+  # requires `override` entries to be last in a defaults list; `_self_` still
+  # comes after, so this config's own blocks continue to win.
+  - _run_defaults
+  - override /task: re_blurb
+  - override /dataset: ddi
+  - override /loss: sequence_cross_entropy
+  - override /metric: relation_f1
+  - override /model: knowledge_aware_pubmedbert_sequence_classifier
+  - override /knowledge: knowhyper
+  - override /knowhyper_encoder: allset
+  - override /knowhyper_retriever: caching
+  - override /knowhyper_integrator: incidence
+  - _self_
+
+task:
+  context_strategy: full_text
+  window_sentences: 0
+  negative_label: "DDI-false"
+
+metric:
+  negative_label: "DDI-false"
+
+model:
+  _target_: knowhyper.ieforge.models.CrossAttentionKnowledgeModel
+  _recursive_: false
+  name: knowhyper_cross_attention
+  tokenizer_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+  hidden_size: 768
+  num_heads: 8
+  feature_dim: 768
+  encoder_layers: 2
+  encoder_heads: 4
+  require_knowledge: true
+  # See khp_re_xattn.yaml: these are the settings every recorded run uses, defaulted
+  # rather than re-typed per command. gate_init=0.0 makes fusion a no-op and turns a
+  # knowledge arm into a silent text-only baseline. Pass it explicitly to ablate.
+  gate_init: 1.0
+  gate_shape: vector
+  fusion_norm: true
+  # Per-instance relevance gate (see khp_re_xattn.yaml). Default off.
+  gate_mlp_enabled: false
+  gate_mlp_init: zeros
+  inner:
+    _target_: ieforge.models.hf_sequence_classifier.HFSequenceClassifier
+    model_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+    name: pubmedbert_seq
+
+knowledge:
+  collator:
+    feature_channels:
+      - _target_: knowhyper.ieforge.channels.IncidenceChannel
+  pipeline:
+    injector:
+      # DDI entities are all labeled "Drug"; map to the primekg "drug" node type.
+      # null the chemprot keys so they don't linger from the knowhyper.yaml default.
+      mention_type_map:
+        Drug: drug
+        CHEMICAL: null
+        GENE-Y: null
+        GENE-N: null
+      retriever:
+        inner:
+          # Boost the DDI-relevant semantic (drug_drug) the way chemprot boosts
+          # drug_protein. anatomy_protein_present down-weight is chemprot-specific
+          # but harmless here (those edges rarely appear around drug-drug seeds).
+          semantics_weight:
+            drug_drug: 5.0
+            drug_combination: 2.0

@@ -1,0 +1,38 @@
+# @package _global_
+# Shared run settings for every RE experiment (knowledge arms AND baselines).
+#
+# WHY THIS FILE EXISTS. These values were previously documented in CLAUDE.md as a
+# table of "mandatory overrides" that had to be re-typed on the command line for
+# every single run. Each of them is silent when wrong -- the run completes and
+# reports a plausible number -- so a single forgotten override produced a result
+# that looked fine and was not comparable to anything. Over 2026-07-27/28 that cost
+# several re-runs and one retracted contrast.
+#
+# A setting that must be identical across every arm belongs in a config that every
+# arm inherits, not in prose. Override on the command line only to ABLATE, and say
+# so when reporting.
+#
+# Not included here, because they are genuinely per-run:
+#   trainer=difflr_nolog (knowledge arms) / trainer=nolog (text-only baselines)
+#   logger=none, paths.output_dir, hydra.run.dir, seed
+dataset:
+  # 64 is what every recorded RE run used, on all three datasets. The ieforge
+  # defaults are LOWER and differ per dataset -- 16 for chemprot/ddi, and 1 for
+  # biored -- so inheriting them silently produces arms that are not comparable to
+  # the recorded ones, and at 16 also underfills the GPU (~4 GB against ~10-13 GB).
+  # Baselines inherit this too: an unmatched baseline invalidates every contrast
+  # drawn against it.
+  #
+  # BioRED deserves a word, since 1 -> 64 is the biggest jump. 64 is not a guess: the
+  # recorded BioRED aggregates are bs=64. The one exception argues FOR this default
+  # rather than against it -- docs/reports/data/biored_surface_2026_07_27 has three
+  # arms at bs=96, and its header flags that non-uniformity as a measurement error
+  # that confounded the structure-vs-text contrast. A per-arm batch size is precisely
+  # the accident a shared default prevents. Note that BioRED's sub-hypergraphs
+  # are ~46% empty and clump by document, so with `require_knowledge: true` an
+  # all-empty batch aborts validation; the batch SIZE is what decides whether such a
+  # batch exists. Changing this number for BioRED is therefore not a throughput
+  # tweak -- re-check the empty-batch analysis in khp_biored_xattn_surface.yaml first.
+  batch_size: 64
+  # num_workers=0 hangs the DataLoader outright. 4 is the floor that works here.
+  num_workers: 4

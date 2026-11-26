@@ -1,0 +1,172 @@
+# pyproject.toml - Python project configuration
+
+[project]
+name = "primehkg"
+version = "0.12.14"
+description = "Local-first PrimeKG → hypergraph dataset build (nodes / hyperedges / support)"
+license = "MIT"
+readme = "README.md"
+authors = [
+    { name = "tti-kde" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "datasets>=2.20.0",
+    "huggingface-hub>=1.11.0",
+    "pyarrow>=16.0.0",
+    "pydantic>=2.7.0",
+    "pyyaml>=6.0.3",
+    "rich>=13.7.0",
+    "typer>=0.12.0",
+]
+# Classifiers help users find your project
+# See https://pypi.org/classifiers/
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.scripts]
+primehkg-build = "primehkg.io.build_cli:entrypoint"
+primehkg-hf-push = "primehkg.io.hf_publish:entrypoint"
+primehkg-primekg-download = "primehkg.io.primekg_download:entrypoint"
+primehkg-retrieve-batch = "primehkg.io.retrieve_batch_cli:entrypoint"
+primehkg-pyg-hyper-incidence = "primehkg.io.pyg_hyper_incidence_cli:entrypoint"
+primehkg-entity-view-build = "primehkg.io.entity_view_build_cli:entrypoint"
+primehkg-curated-fetch = "primehkg.io.curated_fetch_cli:entrypoint"
+primehkg-relation-census = "primehkg.io.relation_census_cli:entrypoint"
+primehkg-benchmark-khop = "primehkg.io.khop_benchmark_cli:entrypoint"
+primehkg-features-build = "primehkg.io.features_build_cli:entrypoint"
+primehkg-embed-build = "primehkg.io.embed_build_cli:entrypoint"
+primehkg-he-text-build = "primehkg.io.he_text_build_cli:entrypoint"
+primehkg-he-embed-build = "primehkg.io.he_embed_build_cli:entrypoint"
+primehkg-vector-sidecar-build = "primehkg.io.vector_sidecar_build_cli:entrypoint"
+primehkg-chemical-xref-build = "primehkg.io.chemical_xref_build_cli:entrypoint"
+primehkg-audit-chemical-crosswalk = "primehkg.io.audit_chemical_crosswalk_cli:entrypoint"
+primehkg-export-mappings = "primehkg.io.primekg_export_cli:entrypoint"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+managed = true  # uvによる環境管理を有効化
+
+# Hatch build configuration
+[tool.hatch.build.targets.wheel]
+packages = ["src/primehkg"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/primehkg/policy/relation_registry.yaml" = "primehkg/policy/relation_registry.yaml"
+"src/primehkg/policy/modality_coverage.yaml" = "primehkg/policy/modality_coverage.yaml"
+"src/primehkg/policy/he_text_templates.yaml" = "primehkg/policy/he_text_templates.yaml"
+"src/primehkg/policy/node_property_registry.yaml" = "primehkg/policy/node_property_registry.yaml"
+"src/primehkg/policy/text_provenance_registry.yaml" = "primehkg/policy/text_provenance_registry.yaml"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.claude",
+  "/.cursor",
+  "/.git",
+  "/.github",
+  "/.references",
+  "/artifacts",
+  "/data",
+  "/dist",
+  "/docs",
+  "/out",
+  "/scripts",
+  "/tests",
+]
+
+# ============================================================================
+# PyTorch CUDA Index Configuration
+# ============================================================================
+# uvの公式ガイドに従ったPyTorchインデックス設定
+# https://docs.astral.sh/uv/guides/integration/pytorch/#using-a-pytorch-index
+#
+# CUDA 12.6 用のPyTorchをインストールするための設定
+# explicit = true により、このインデックスを明示的に指定した依存関係のみ
+# このインデックスから解決されます
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+# ============================================================================
+# PyTorch Geometric Index Configuration
+# ============================================================================
+# PyTorch Geometric用のfind-links互換インデックス
+# https://pytorch-geometric.readthedocs.io/en/latest/install/installation.html
+#
+# CUDA 12.6 用のPyTorch Geometricをインストールするための設定
+# format = "flat"により、find-linksスタイルのHTMLページから依存関係を解決
+# explicit = true により、このインデックスを明示的に指定した依存関係のみ
+# このインデックスから解決されます
+[[tool.uv.index]]
+name = "pytorch-geometric"
+url = "https://data.pyg.org/whl/torch-2.8.0+cu126.html"
+format = "flat"
+explicit = true
+
+# PyTorch Geometric拡張パッケージを専用indexに紐付け
+# torch-geometricコアパッケージはPyPIから、拡張パッケージはPyG専用インデックスから
+# インストールされます
+[tool.uv.sources]
+torch-scatter = { index = "pytorch-geometric" }
+torch-sparse = { index = "pytorch-geometric" }
+torch-cluster = { index = "pytorch-geometric" }
+torch-spline-conv = { index = "pytorch-geometric" }
+
+# ============================================================================
+# Development tool configurations
+# ============================================================================
+
+# ty - 高速Python型チェッカー (Rust製)
+# https://docs.astral.sh/ty/
+[tool.ty]
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.ty.src]
+include = ["src/primehkg"]
+
+[tool.ty.terminal]
+output-format = "full"
+
+
+[dependency-groups]
+embed = [
+    "sentence-transformers>=3.0",
+    "transformers>=4.40",
+    "torch==2.8.0",
+    "numpy>=1.26",
+    "lmdb>=1.4",
+]
+vector = [
+    "hnswlib>=0.8",
+]
+dev = [
+    # PyTorch and related libraries
+    "torch==2.8.0",
+    "torchvision",
+    # PyTorch Geometric and related libraries
+    "torch-geometric",
+    "torch-scatter",
+    "torch-sparse",
+    "torch-cluster",
+    "torch-spline-conv",
+    # Development tools
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "ruff>=0.6",
+    "ty",
+    # fetch/dev only — xlsx conversion for DrugComb identifiers; NOT a runtime dep
+    "openpyxl>=3.1",
+]

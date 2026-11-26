@@ -1,0 +1,25 @@
+# @package _global_
+# BC2GM (gene) variant of the NER text arm. Restates its own retriever profile:
+# selecting the chem profile here would compose cleanly and silently retrieve the
+# wrong graph (`caching_ner_chem` demotes drug-consequence edges and knows nothing
+# about `anatomy_protein_present`, which is 1.5M rows on the gene side).
+defaults:
+  - ner_retrieved_text
+  - override /dataset: blurb_ner_bc2gm
+  - override /knowhyper_retriever: caching_ner_gene
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        # `Chemical: null` ERASES the inherited chem key. Hydra MERGES dicts, so
+        # without this the gene arm carries `Chemical: drug` from the parent. It is
+        # inert on a Gene-only dataset, but it makes the resolved config a lie and
+        # the fusion arms all spell it out (khp_ner_bc2gm.yaml).
+        Chemical: null
+        # `Gene`, matching the dataset's own label. NOT `GENE`: an unmatched key maps
+        # zero mentions, so the arm would retrieve nothing and train as a silent
+        # baseline while reporting a text-arm score. Verified against the live
+        # dataset label set, not guessed from the task name.
+        Gene: protein

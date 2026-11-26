@@ -1,0 +1,7 @@
+_target_: ieforge.datasets.biored.BioREDDataset
+task: biored
+split: train
+name: biored
+batch_size: 1
+num_workers: 4
+task_family: biored

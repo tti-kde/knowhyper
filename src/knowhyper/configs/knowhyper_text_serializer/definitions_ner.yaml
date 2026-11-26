@@ -1,0 +1,81 @@
+# @package knowledge.pipeline.injector.text_serializer
+# NER text arm: name + synonyms + description, as tokens in the input.
+#
+# WHY A SEPARATE SERIALIZER FROM `definitions.yaml`. Three differences, each of which
+# would silently change an existing arm if made in place:
+#
+# 1. **Modalities.** `definitions.yaml` selects `[description, definition]` --
+#    semantic prose. This arm additionally wants the LEXICAL surfaces, which is the
+#    whole hypothesis for NER: a span is a chemical/gene/disease name, and the
+#    evidence for that is other names for the same entity, not its mechanism of
+#    action. So `synonym_context` (the pipe-joined synonym list) and the name-bearing
+#    `description` rows come in too.
+#
+# 2. **`allowed_payload_classes`.** `definitions.yaml` allows only
+#    `semantic_definition`, which is exactly what excludes names. Names and synonyms
+#    are both `short_label`, so this arm must allow both classes. Note the RE arm's
+#    exclusion of names was deliberate and scoped -- "to keep definition coverage
+#    interpretable", per CLAUDE.md, "not as a general rule".
+#
+# 3. **`audience: legacy`.** The synonym rows carry
+#    `license_id: PrimeHKG-derived`, `usage_scope: review_required`,
+#    `redistribution_scope: attribution_required`, `provenance_status: partial`,
+#    `license_tag: null`. Under `audience: publishable` the serializer sets
+#    `requires_complete_upstream_provenance` (`text_serialization.py:601`) and rejects
+#    them. CLAUDE.md is explicit about the fix: use `audience: legacy` -- do NOT edit
+#    registry verdicts to unblock an internal arm, because the registry digest feeds
+#    the serializer fingerprint and an edit invalidates already-completed arms.
+#
+#    This is safe here because the licence question is only about REDISTRIBUTION:
+#    raw text lives in a 0600 cache under a 0700 dir, `.gitignore`/`.abciignore` keep
+#    it out of Git and ABCI snapshots, and only aggregates reach the report. Nothing
+#    leaves the machine.
+#
+# REQUIRES text features 0.12.14. `synonym_context` does not exist at 0.12.10 (the
+# older pin): 0.12.10 has 15 modalities and no synonym field, 0.12.14 has 16 and
+# 37,817 `synonym_context` rows (source_field `synonyms`). Coverage by node type is
+# protein 20,899 / disease 11,372 / chebi 3,482 / drug 2,064.
+_target_: knowhyper.pipeline.text_serialization.RetrievedDefinitionsSerializer
+evidence_index:
+  _target_: knowhyper.pipeline.text_serialization.load_definition_evidence_index
+  features_dir:
+    _target_: knowhyper.features.modality_index.resolve_text_features_dir
+    # Immutable snapshot SHA, not the tag -- the human-readable tag has drifted before.
+    revision: ${knowhyper.text14_features_commit}
+  modalities: [synonym_context, description, definition]
+  expected_commit: ${knowhyper.text14_features_commit}
+  expected_inputs_fingerprint: ${knowhyper.text14_features_fingerprint}
+  expected_text_provenance_schema: ${knowhyper.text14_features_provenance_schema}
+  expected_provenance_registry_sha256: ${knowhyper.text14_features_registry_sha256}
+modalities: [synonym_context, description, definition]
+# legacy => license_registry must be null (validate_for_audience is skipped).
+license_registry: null
+allowed_payload_classes: [semantic_definition, short_label]
+audience: legacy
+raw_text_cache_mode: restricted
+cache_root: ${knowhyper.storage_root}/cache/text/ner_name_synonym_definitions
+source_revision: ${knowhyper.text14_features_revision}@${knowhyper.text14_features_commit}
+source_fingerprint: ${knowhyper.text14_features_fingerprint}
+# NOT linked_mentions_role_v1: that schema REQUIRES pair_role in {head,tail} on
+# every linked mention (primehkg_backend.py:67-75) and raises otherwise. It is an RE
+# concept -- NER has a flat predicted-mention list with no head/tail -- so copying it
+# from the RE template killed all 150 precompute shards with
+# "role-aware provenance requires head/tail on every linked mention".
+#
+# null makes _targets() take its generic branch, which walks the linked mentions and
+# assigns `seed_N` roles positionally. That is the right shape for NER: there is no
+# pair to be head or tail of, only a list of spans whose surfaces we want text for.
+required_provenance_schema: null
+# Cap the serialized item count. MEASURED on the full test splits (linked seeds per
+# instance): chem median 1 / p90 3 / p99 5 / max 15; bc2gm median 0 / p90 3 / p99 7 /
+# max 19; disease median 1 / p90 2 / p99 4 / max 11. So 8 covers >99% of instances.
+#
+# This is NOT redundant with `injector.top_k`, which caps HYPEREDGES. `_targets`'s
+# generic branch (the NER path) can return the whole SEED set, and the collator spends
+# ~4 wrapper tokens per item before any content -- an uncapped instance demanded 382
+# tokens of pure tags against a 256 budget and killed 28 of 60 text cells. The
+# collator's guard caught it correctly, but the arm needs a bound, not a bigger budget.
+#
+# 8 items x 4 wrappers = 32 tokens, leaving 224 of the 256 budget for content: ~28
+# tokens per item at the cap, and the full payload for the median 1-item instance.
+max_targets: 8

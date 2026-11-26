@@ -1,0 +1,6 @@
+_target_: ieforge.datasets.blurb_ner.BLURBNERDataset
+task: bc2gm
+name: blurb_ner_bc2gm
+batch_size: 16
+num_workers: 4
+task_family: ner

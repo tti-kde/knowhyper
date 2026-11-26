@@ -1,0 +1,17 @@
+# @package _global_
+defaults:
+  - override /task: bioredirect_pair
+  - override /dataset: biored
+  - override /model: bioredirect
+  - override /loss: bioredirect_multitask
+  - override /metric: bioredirect_f1
+
+dataset:
+  task: bioredirect
+  batch_size: 8
+
+optimizer:
+  lr: 1e-5
+
+trainer:
+  max_epochs: 10

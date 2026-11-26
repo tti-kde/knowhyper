@@ -1,0 +1,8 @@
+# @package _global_
+defaults:
+  - re_retrieved_definitions
+  - _self_
+
+knowledge:
+  collator:
+    mode: off_short

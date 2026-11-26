@@ -1,0 +1,4 @@
+# @package knowledge.pipeline.injector.retriever
+_target_: knowhyper.ieforge.primehkg_backend.RuleSubHGRetriever
+dataset: ${knowledge.dataset}
+top_k: 64

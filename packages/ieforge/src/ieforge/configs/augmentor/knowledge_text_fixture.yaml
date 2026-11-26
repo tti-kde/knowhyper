@@ -1,0 +1,12 @@
+# @package _global_
+defaults:
+  - override /knowledge: text_fixture
+  - _self_
+
+augmentor:
+  _target_: ieforge.knowledge.integration.augmentors.KnowledgeAugmentor
+  pipeline: ${knowledge.pipeline}
+  channels:
+    - name: text
+      _target_: ieforge.knowledge.channels.text.TextChannel
+      target_field: context

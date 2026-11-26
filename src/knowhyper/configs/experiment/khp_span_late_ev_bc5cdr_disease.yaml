@@ -1,0 +1,21 @@
+# @package _global_
+# #231 Variant 1: baseline-preserving late-logit span verifier.
+#
+# Identical to `khp_span_ner_ev_bc5cdr_disease` except the model: same dataset,
+# retriever profile, loss, metric, batch size and candidate lattice, so the only
+# difference from the #218 arm is the injection site. Keeping the retriever line
+# inherited matters -- it is dataset-specific and selecting the wrong profile
+# composes cleanly while retrieving the wrong graph.
+# BC5CDR-Disease variant of the candidate-specific EV-cold arm.
+defaults:
+  - khp_span_late_ev
+  - override /dataset: blurb_ner_bc5cdr_disease
+  - override /knowhyper_retriever: caching_ner_disease
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Chemical: null
+        Disease: disease

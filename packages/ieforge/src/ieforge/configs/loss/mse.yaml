@@ -1,0 +1,2 @@
+_target_: ieforge.losses.mse.MSELoss
+name: mse

@@ -1,0 +1,18 @@
+# @package _global_
+# BC2GM gene NER with knowledge integration.
+defaults:
+  - khp_ner
+  - override /dataset: blurb_ner_bc2gm
+  # Gene profile, NOT khp_ner's chemical one. Within a dataset every arm must share
+  # one profile; across datasets they must differ (CLAUDE.md). For a protein seed the
+  # unweighted flood is `anatomy_protein_present` (1,518,203 rows -- the largest
+  # semantics in the core), which says only "this protein is in that tissue".
+  - override /knowhyper_retriever: caching_ner_gene
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Chemical: null
+        Gene: protein

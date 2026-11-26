@@ -1,0 +1,23 @@
+# @package knowledge.pipeline.injector.encoder.feature_store
+# CompositeFeatureStore: routes primekg:* anchor nodes to PrimeHKGFeatureStore
+# (768d PubMedBERT display_name via vector_node_v1 sidecar) and attr:* attribute
+# nodes to AttributeNodeFeatureStore (modality embeddings from primehkg-features,
+# zero-padded to 768d). Used with entity_view_augment: true (Lever B).
+_target_: knowhyper.ieforge.composite_feature_store.CompositeFeatureStore
+anchor_store:
+  _target_: knowhyper.ieforge.primehkg_backend.PrimeHKGFeatureStore
+  dataset: ${knowledge.dataset}
+  dim: 16
+attr_store:
+  _target_: knowhyper.ieforge.composite_feature_store.AttributeNodeFeatureStore
+  modality_index:
+    _target_: knowhyper.features.modality_index.ModalityIndex
+    features_dir:
+      # `resolve_features_dir` resolves primehkg-FEATURES, so it takes
+      # `features_revision`, not `dataset_revision` (which is primehkg-CORE). These
+      # were the same string while both repos were pinned to 0.12.3, so passing the
+      # core revision here worked by coincidence. Once core moved to 0.12.13 and
+      # features to 0.12.14 it asked the features repo for a revision that does not
+      # exist there, and every EV cell died with LocalEntryNotFoundError.
+      _target_: knowhyper.features.modality_index.resolve_features_dir
+      revision: ${knowhyper.features_revision}

@@ -1,0 +1,48 @@
+# ieforge's ``trainer/default`` minus the LearningRateMonitor callback.
+#
+# Pairs with ``logger=none``. LearningRateMonitor hard-raises
+# ``MisconfigurationException: Cannot use LearningRateMonitor callback with
+# Trainer that has no logger``, so the two cannot coexist. Dropping it costs only
+# the per-epoch LR trace, which is diagnostic — it does not touch optimisation,
+# metrics, or checkpoint selection.
+#
+# Everything else is copied verbatim from ieforge ``trainer/default.yaml``;
+# keep it in sync if that file changes.
+#
+# Usage: ``trainer=nolog logger=none``
+#        (requires ``hydra.searchpath=[pkg://knowhyper.configs]``)
+_target_: pytorch_lightning.Trainer
+
+max_epochs: 10
+accelerator: auto
+devices: 1
+precision: bf16-mixed
+accumulate_grad_batches: 1
+fast_dev_run: false
+limit_train_batches: null
+limit_val_batches: null
+limit_test_batches: null
+
+check_val_every_n_epoch: 1
+val_check_interval: 1.0
+
+log_every_n_steps: 10
+enable_progress_bar: true
+
+callbacks:
+  - _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    dirpath: ${paths.output_dir}/checkpoints
+    filename: "epoch_{epoch:03d}-${metric.monitor_label}_{${metric.monitor}:.4f}"
+    monitor: ${metric.monitor}
+    mode: ${metric.monitor_mode}
+    save_top_k: 3
+    save_last: true
+    auto_insert_metric_name: false
+
+  - _target_: pytorch_lightning.callbacks.EarlyStopping
+    monitor: ${metric.monitor}
+    patience: 5
+    mode: ${metric.monitor_mode}
+
+deterministic: false
+benchmark: true

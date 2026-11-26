@@ -1,0 +1,86 @@
+# @package _global_
+#
+# GRAFT-style over PrimeHKG NATURAL TEXT on BioRED, `real` arm (#189 follow-up B).
+#
+# WHY THIS ARM EXISTS. The screened GRAFT arms serialize the sub-hypergraph as
+# `[HG] semantics=...; role=...; polarity=...` and showed `real - masked` ~= 0 at two
+# evidence budgets, with the encoder demonstrably ABLE to separate real from masked
+# (linear probe 1.000). That leaves the null confounded with the SERIALIZATION FORMAT,
+# which is ours and is not what official GRAFT reads -- official retrieves natural-text
+# snippets. This arm swaps the payload to raw `node_features_text` and changes nothing
+# else, so:
+#
+#   * null disappears -> the problem was the FORMAT (structure does not transfer as text)
+#   * null persists   -> the problem is the FUSION DESIGN, independent of content type
+#
+# NOT a re-run of R2a. R2a concatenated definitions into ONE 512-token sequence; this
+# feeds them to a SECOND ENCODER and mixes logits through the learned gate. The route
+# differs, and route has changed a conclusion on this project before (NER: the same
+# retrieved text was null through cross-attention and positive through input tokens).
+#
+# Inherits biored_retrieved_definitions, so the licence registry, provenance schema, retriever
+# profile and payload-class filter are byte-identical to R2a -- only the injection
+# route differs. Needs no new SubHG precompute.
+#
+# SURFACE-fallback linking, matching every other BioRED arm in this family. The first
+# version of this config inherited `biored_retrieved_definitions` directly, which is
+# ID-ONLY linking: it resolved to cache 3a484c25253cf019 while the arm it must be
+# contrasted against (`biored_graft_style_real`) resolves to cb831d8592bc38aa. On the
+# id-only cache 46.2% of BioRED sub-HGs are EMPTY, and this model does not set
+# `require_knowledge`, so nearly half the rows would have trained as pure baseline
+# while the arm reported a knowledge score -- and `graft_text - graft_real` would have
+# folded a LINKING change into the payload-type change it is supposed to isolate.
+# Verify with scripts/resolve_cache_fingerprint.py, never by reading the defaults list.
+defaults:
+  - biored_retrieved_definitions
+  - _self_
+
+model:
+  _target_: knowhyper.ieforge.models.ParallelTextGatedKnowledgeModel
+  _recursive_: false
+  name: knowhyper_parallel_text_gated
+  tokenizer_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+  hidden_size: 768
+  num_heads: 8
+  gate_bias_init: 0.0
+  fusion_norm: true
+  inner:
+    _target_: ieforge.models.hf_sequence_classifier.HFSequenceClassifier
+    model_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+    name: pubmedbert_seq
+
+knowledge:
+  pipeline:
+    injector:
+      text_serializer:
+        # Cap the serialized items. This arm is the first to combine
+        # `surface_fallback: true` (which appends EVERY endpoint's surface forms, so
+        # the target count is unbounded) with the DEFINITIONS payload (~4 wrapper
+        # tokens per item before any content). Without a cap the wrapper tags alone
+        # needed 132 tokens against a 126 budget and every masked cell died with
+        # "max_evidence_tokens is too small to preserve definition boundary tags".
+        #
+        # `injector.top_k` does NOT bound this -- it caps hyperedges, not targets (see
+        # text_serialization.py's max_targets comment, which records the same failure
+        # on the NER branch at "need 382, got 256"). The R2b surface arm never hit it
+        # because the serialized payload drops whole blocks instead of reserving tags.
+        #
+        # 8 matches definitions_ner.yaml. At ~4 tags per item that reserves ~32 of the
+        # 126 tokens, leaving ~94 for content -- and the round-robin split then gives
+        # every retained item a share rather than dropping any.
+        max_targets: 8
+    query_builder:
+      surface_fallback: true
+      # Must be set together with surface_fallback -- it is what folds into linker_id
+      # so this arm reads the surface cache rather than silently retrieving id-only
+      # content under a surface name. Pinned by
+      # tests/ieforge/test_biored_query_builder.py.
+      surface_tag: "#surface=true"
+  collator:
+    _target_: knowhyper.ieforge.parallel_text_collator.ParallelEvidenceKnowledgeCollator
+    evidence_mode: real
+    payload: definitions
+    # Matches the screened GRAFT arms' budget so this contrast is about the payload
+    # TYPE, not the amount. Both keys in lockstep -- the collator rejects a mismatch.
+    max_evidence_tokens: 128
+    max_knowledge_tokens: 128

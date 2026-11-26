@@ -1,0 +1,6 @@
+# @package _global_
+defaults:
+  - khp_span_late_ev_warm_ncbi_disease
+  - /knowhyper_text_serializer: definitions_ner
+  - _span_late_text_sidecar
+  - _self_

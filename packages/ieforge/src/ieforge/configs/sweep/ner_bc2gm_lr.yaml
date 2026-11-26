@@ -1,0 +1,19 @@
+name: ner_bc2gm_lr
+method: bayes
+base_overrides:
+  - experiment=ner
+  - dataset=blurb_ner_bc2gm
+parameters:
+  optimizer.lr:
+    distribution: log_uniform_values
+    min: 1.0e-5
+    max: 1.0e-4
+  optimizer.weight_decay:
+    values: [0.0, 0.01, 0.1]
+  trainer.max_epochs:
+    values: [10, 20]
+  scheduler.num_warmup_steps:
+    values: [0, 250, 500]
+early_terminate:
+  type: hyperband
+  min_iter: 3

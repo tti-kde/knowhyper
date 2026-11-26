@@ -1,0 +1,7 @@
+_target_: ieforge.datasets.blurb_re.BLURBREDataset
+task: gad
+split: train
+name: gad
+batch_size: 16
+num_workers: 4
+task_family: re

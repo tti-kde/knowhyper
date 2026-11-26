@@ -1,0 +1,2 @@
+_target_: ieforge.losses.multilabel_bce.MultiLabelBCELoss
+name: multilabel_bce

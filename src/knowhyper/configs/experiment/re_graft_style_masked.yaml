@@ -1,0 +1,28 @@
+# @package _global_
+#
+# GRAFT-style `masked` arm on the same dataset as re_graft_style_real (#189).
+#
+# THE PRIMARY CONTROL. `graft_real - graft_masked` is the pre-registered primary
+# contrast, and it is a capacity/content control matched EXACTLY: the collator
+# builds the real evidence token sequence first, then replaces every non-special
+# token with [MASK]. So the two arms agree per instance on sequence length,
+# retained block count and special-token positions, and differ only in whether
+# the retained blocks carry content.
+#
+# Why exact-token-count masking rather than the R2b `shuffled` control: shuffled
+# corrupts semantics/polarity VALUES but keeps connectivity and node ids, and its
+# replacement strings tokenize to different lengths, so it matches the treated arm
+# only in expectation. That makes it a good typed-value control (which is why R2b
+# uses it) but a poor capacity control for an arm whose whole question is "does the
+# extra encoder and gate help, or does the retrieved content?".
+#
+# This config must differ from its `real` sibling in `evidence_mode` and NOTHING
+# else -- pinned by tests/ieforge/test_graft_style_config.py. A second difference
+# would leave `real - masked` measuring two things at once.
+defaults:
+  - re_graft_style_real
+  - _self_
+
+knowledge:
+  collator:
+    evidence_mode: masked

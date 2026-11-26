@@ -1,0 +1,19 @@
+# @package _global_
+# JNLPBA extension.  The upstream loader collapses its five source types to
+# ``entity``; mapping that label to protein would fabricate type information, so the
+# null entry deliberately produces untyped linking.
+defaults:
+  - khp_span_ner_edge
+  - override /dataset: blurb_ner_jnlpba
+  - override /knowhyper_retriever: caching_ner_jnlpba
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        entity: null
+      linker:
+        # `entity` is a loader placeholder, not a PrimeHKG node type. Strict
+        # matching would search for that fabricated type and yield empty graphs.
+        strict_type_match: false

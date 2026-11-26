@@ -1,0 +1,27 @@
+# @package _global_
+# Content control for ner_retrieved_text: mention identity and payload LENGTH
+# preserved, body replaced with [MASK] filler.
+#
+# WHY THIS IS THE CONTROL THAT MATTERS HERE, and why text_off is not.
+# `text_off` (mode: off_short) reproduces the treated arm's SOURCE truncation and
+# drops the knowledge tokens. On RE that is a real control -- BioRED truncates 87% of
+# instances. On NER it is inert: measured over 600 BC5CDR-Disease test instances the
+# source is 25 tokens at the median and 112 at the max, against a source floor of
+# >=253, so truncation NEVER happens and text_off is byte-identical to `base`
+# (verified: same test_f1 to 6 decimals on all 10 seeds).
+#
+# So text_off cannot separate "the retrieved TEXT helped" from "an extra
+# [SEP]-delimited segment helped" or "seeing the entity NAME helped". This arm can:
+# it keeps the segment, the tags, the token count and the mention surface, and
+# destroys only the synonym/definition body.
+#
+# Needed because BC5CDR-Disease's text arm is the campaign's first result to clear
+# the measured noise band (+0.0083, t=+3.80, 9/10 vs base at n=10, band p95 0.0040).
+# An unreplicated first positive with no content control is not a finding.
+defaults:
+  - ner_retrieved_text
+  - _self_
+
+knowledge:
+  collator:
+    mention_mode: sham

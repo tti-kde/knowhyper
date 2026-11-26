@@ -1,0 +1,85 @@
+# @package _global_
+# #220: Knowledge-as-text on the SPAN protocol. BC5CDR-Chem; the dataset variants
+# override dataset + retriever profile.
+#
+# WHY A NEW FAMILY rather than overriding `ner_retrieved_text`. That arm inherits
+# `ner_baseline`, which sets `model: HFTokenClassifier` in its OWN block -- so a
+# `model=..._span_classifier` override on the command line is silently overridden
+# back and the arm trains a BIO model while reporting a span experiment. The
+# completed BIO campaign's configs are also a recorded result and must not be edited.
+#
+# WHAT IS DELIBERATELY REUSED: the measured payload budget. `_truncate_knowledge`
+# divides the budget ROUND-ROBIN over every retrieved item at ~4 tokens of
+# `[ hg ] ... [ /hg ]` wrapper each, so 64 items @ 256 leaves 0 body tokens and the
+# treated arm becomes byte-identical to the control -- a null with no error. 8 items
+# @ 256 gives ~28 body tokens, the smallest configuration that can carry more than
+# one synonym surface. Do not re-derive these; see ner_retrieved_text.yaml.
+#
+# REQUIRED at runtime: knowledge.pipeline.query_builder.predictions_root=<#218 cell>
+# and an explicit `model=<backbone>_span_classifier`.
+#
+# The mention source is #218's OOF CANDIDATE LATTICE, not a hard BIO decode: #220
+# names #218 Phase 0.2-0.3 the canonical producer of proposals and caches, and both
+# routes must read one proposal distribution for Table 6 to compare them.
+defaults:
+  - _run_defaults
+  - /knowhyper_text_serializer: definitions_ner
+  - override /task: span_ner
+  - override /dataset: blurb_ner_bc5cdr_chem
+  - override /loss: focal
+  - override /metric: entity_f1
+  - override /knowledge: knowhyper_ner
+  - override /knowhyper_retriever: caching_ner_chem
+  - _self_
+
+dataset:
+  # RESTORE ieforge's span-NER default. `_run_defaults` pins batch_size: 64, but
+  # its own header scopes that to "every RE experiment". #202's recorded span
+  # baselines are bs=16 and score 0.9247 test f1 on BC5CDR-Chem.
+  #
+  # This arm was NOT visibly harmed at 64 (the #220 smoke measured 0.9299 on
+  # biolinkbert/chem, i.e. on #202's number) -- which is exactly why it must be
+  # pinned anyway. `base` sank 0.20 at the same setting, so leaving the arms on
+  # different effective protocols would make `text_real - base` a batch-size
+  # contrast wearing a knowledge label. Every arm of a contrast shares one value.
+  batch_size: 16
+
+task:
+  max_span_width: 12
+  threshold: 0.5
+  decoder: max_total_score
+
+model:
+  # Pinned explicitly rather than left to ieforge's constructor default. The default
+  # IS start_end today, but #218's fusion arms set it in their own configs, and
+  # Table 6 compares the two routes -- a silent upstream default change would move
+  # one route only. `++` so this composes over whichever backbone config is selected.
+  span_rep_mode: start_end
+
+knowledge:
+  collator:
+    _target_: knowhyper.ieforge.text_collator.PairAwareTextKnowledgeCollator
+    require_prompts: false
+    feature_channels: []
+    max_length: ${task.max_length}
+    # Measured, not guessed -- see the header and ner_retrieved_text.yaml.
+    max_knowledge_tokens: 256
+    min_source_tokens: 256
+    mode: definitions
+  pipeline:
+    query_builder:
+      mention_source: candidates
+    injector:
+      top_k: 8
+      encoder: null
+      integrator: null
+      mention_provenance_schema: linked_mentions_v1
+      linker:
+        strict_type_match: true
+      retriever:
+        # linked_mentions_v1, explicitly: it enters the cache fingerprint, and this
+        # arm must land on the SAME retrieval identity as #218's edge arm so the
+        # prediction-scoped cache is shared rather than rebuilt.
+        provenance_schema: linked_mentions_v1
+        inner:
+          provenance_schema: linked_mentions_v1

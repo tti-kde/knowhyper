@@ -1,0 +1,50 @@
+# @package _global_
+# khp_ner_ev.yaml with strict_type_match ON.
+#
+# WHY THIS ARM EXISTS. On RE, strict typing is what makes the entity view beat
+# structure-only -- the opposite of the prediction written into the RE strict arms
+# when they were created ("the entity-view arm should LOSE most from strict typing,
+# since fewer seeds means fewer attribute nodes"). Measured at n=10 on DDI test
+# 2026-07-28:
+#
+#   ev_cold_strict - base         +0.0139 p=.001 (9/10)
+#   ev_cold      - base           +0.0072 p=.289 (null)
+#   ev_cold_strict - edge_strict   +0.0059
+#   ev_cold      - edge            -0.0064
+#
+# So on the EV family strict converts a null into the strongest knowledge-vs-none
+# result, and it is the arm the RE evidence actually favours. This is the NER
+# counterpart and the one to lead with.
+#
+# Do NOT assume it transfers. RE pairs two gold, already-typed entities; NER links
+# PREDICTED mentions from a K=16 candidate lattice in which only ~11% of candidates
+# are exact gold spans. Strict typing rejects wrong-typed links, which on the NER
+# side removes seeds for the 89% non-gold candidate mass as well as for genuine
+# mentions -- plausibly a bigger effect than on RE, in either direction.
+#
+# Precompute: strict_type_match is folded into `linker_id`, so the strict arms need
+# their own SubHG cache -- but this arm SHARES it with khp_ner_strict
+# (71b330506dd2ee18). Entity-view augmentation happens after raw SubHG retrieval,
+# so `ev` does not change what is retrieved, only how it is decorated. Precompute
+# once per strict setting, not once per arm:
+#
+#   849c05bd0d2c712a  khp_ner, khp_ner_ev                (non-strict, weighted)
+#   71b330506dd2ee18  khp_ner_strict, khp_ner_ev_strict  (strict, weighted)
+#
+# Verify with `scripts/resolve_cache_fingerprint.py khp_ner_ev_strict` rather than
+# assuming -- and note that on core 0.12.13 the resolver's self-check has no known
+# NER cache registered in `_SELF_CHECK_BY_CORE_REV` yet, so it reports the recipe as
+# UNVALIDATED. Both caches above were confirmed on disk with all three splits.
+#
+# `b6b45dcf4d54dcc4` is the pre-fix UNIFORM strict cache (the measurement source in
+# caching_ner_chem.yaml), NOT this arm's. Adding the weights re-fingerprinted every
+# NER arm.
+defaults:
+  - khp_ner_ev
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      linker:
+        strict_type_match: true

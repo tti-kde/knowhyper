@@ -1,0 +1,4 @@
+name: scibert_seq
+_target_: ieforge.models.hf_sequence_classifier.HFSequenceClassifier
+model_name: allenai/scibert_scivocab_uncased
+tokenizer_name: allenai/scibert_scivocab_uncased

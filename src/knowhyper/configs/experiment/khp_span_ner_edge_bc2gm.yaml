@@ -1,0 +1,14 @@
+# @package _global_
+# BC2GM variant of the candidate-specific structure arm.
+defaults:
+  - khp_span_ner_edge
+  - override /dataset: blurb_ner_bc2gm
+  - override /knowhyper_retriever: caching_ner_gene
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Chemical: null
+        Gene: protein

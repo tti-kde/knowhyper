@@ -1,0 +1,58 @@
+# Span-NER benchmark trainer with differential LR and bounded checkpoint I/O.
+#
+# Mirrors ieforge's trainer/benchmark optimisation and early stopping. The
+# LearningRateMonitor is replaced by a no-op so logger=none is valid, and the
+# KnowledgeLRCallback remains at index 3 like difflr_nolog.
+_target_: pytorch_lightning.Trainer
+
+max_epochs: 10
+accelerator: auto
+devices: 1
+precision: bf16-mixed
+accumulate_grad_batches: 1
+fast_dev_run: false
+limit_train_batches: null
+limit_val_batches: null
+limit_test_batches: null
+
+check_val_every_n_epoch: 1
+val_check_interval: 1.0
+
+log_every_n_steps: 10
+enable_progress_bar: true
+
+callbacks:
+  - _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    dirpath: ${paths.output_dir}/checkpoints
+    filename: "epoch_{epoch:03d}-${metric.monitor_label}_{${metric.monitor}:.4f}"
+    monitor: ${metric.monitor}
+    mode: ${metric.monitor_mode}
+    save_top_k: 1
+    save_last: false
+    save_weights_only: true
+    auto_insert_metric_name: false
+
+  - _target_: pytorch_lightning.callbacks.EarlyStopping
+    monitor: ${metric.monitor}
+    patience: 5
+    mode: ${metric.monitor_mode}
+
+  - _target_: pytorch_lightning.callbacks.Callback
+
+  - _target_: knowhyper.ieforge.lr_groups.KnowledgeLRCallback
+    knowledge_lr_mult: 10.0
+
+  # APPENDED at index 4 on purpose. `KnowledgeLRCallback` must stay at index 3
+  # because every driver passes `trainer.callbacks.3.knowledge_lr_mult=10`;
+  # inserting anywhere earlier would silently retarget that override at the wrong
+  # callback and drop the measured differential LR.
+  #
+  # Writes #218 Phase 2's knowledge diagnostics beside the run, IN-JOB. Run
+  # checkpoints get cleaned, so a probe submitted afterwards finds nothing and skips
+  # every cell. Harmless for arms with no knowledge branch: the model never sets
+  # `knowledge_diagnostics` and the callback then writes no file at all.
+  - _target_: knowhyper.ieforge.span_diagnostics_callback.SpanDiagnosticsCallback
+    output_dir: ${paths.output_dir}
+
+deterministic: false
+benchmark: true

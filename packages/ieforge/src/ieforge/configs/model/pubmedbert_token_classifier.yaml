@@ -1,0 +1,4 @@
+name: pubmedbert
+_target_: ieforge.models.hf_token_classifier.HFTokenClassifier
+model_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+tokenizer_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext

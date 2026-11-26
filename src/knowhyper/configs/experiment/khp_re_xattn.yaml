@@ -1,0 +1,82 @@
+# @package _global_
+# KnowHyper RE with the GPU-batched cross-attention knowledge integrator.
+# Same task/dataset/loss/metric/retrieval (semantics_weight) as khp_re — only the
+# fusion path differs: IncidenceIntegrator passes raw leaf incidence tensors through
+# the collator (picklable → num_workers>0), and CrossAttentionKnowledgeModel runs
+# encode_batch on GPU then gate-fuses the knowledge into [CLS].
+defaults:
+  # Shared mandatory run settings (batch_size/num_workers). FIRST because Hydra
+  # requires `override` entries to be last in a defaults list; `_self_` still
+  # comes after, so this config's own blocks continue to win.
+  - _run_defaults
+  - override /task: re_blurb
+  - override /dataset: chemprot
+  - override /loss: sequence_cross_entropy
+  - override /metric: relation_f1
+  # Override /model to the soft-prompt model group, then the inline `model:` block
+  # below swaps the wrapper to CrossAttentionKnowledgeModel. This group is needed
+  # to displace train.yaml's base /model default (modernbert); the inline block
+  # merges over it (leftover prompt_key/_mask_key are harmless — the cross-attention
+  # model accepts and ignores them via **kwargs).
+  - override /model: knowledge_aware_pubmedbert_sequence_classifier
+  - override /knowledge: knowhyper
+  - override /knowhyper_encoder: allset
+  - override /knowhyper_retriever: caching
+  - override /knowhyper_integrator: incidence
+  - _self_
+
+task:
+  context_strategy: full_text
+  window_sentences: 0
+
+# Replace the soft-prompt wrapper with the cross-attention model, reusing the same
+# biomedical PubMedBERT inner classifier.  The store-free encoder is built by the
+# model itself (feature_dim=768 = PubMedBERT / vector_node_v1 embedding dim).
+model:
+  _target_: knowhyper.ieforge.models.CrossAttentionKnowledgeModel
+  _recursive_: false
+  name: knowhyper_cross_attention
+  tokenizer_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+  hidden_size: 768
+  num_heads: 8
+  feature_dim: 768
+  encoder_layers: 2
+  encoder_heads: 4
+  require_knowledge: true
+  # Fusion gate. These are the settings every recorded knowledge experiment uses,
+  # so they are the DEFAULT rather than something each command must remember to
+  # override: gate_init=1.0 starts the model fully fusing knowledge (it must learn
+  # to discard it), gate_shape=vector makes the gate per-hidden-dim so it cannot
+  # collapse to a single scalar.
+  #
+  # They used to default to 0.0/scalar (the original degradation-guarantee run) and
+  # CLAUDE.md required overriding both on every invocation. That is backwards and it
+  # bit repeatedly: with gate_init=0.0 the fused term is `cls + 0*attn_out == cls`,
+  # so a knowledge arm silently trains as a text-only baseline, completes, and
+  # reports a plausible number. An omitted override must not be able to change what
+  # a run MEASURES. Pass model.gate_init=0.0 explicitly for an ablation.
+  gate_init: 1.0
+  gate_shape: vector
+  # LayerNorm on the cross-attention output. Required for stable training; without
+  # it the knowledge branch diverges. Mandatory in every documented command, hence
+  # the default.
+  fusion_norm: true
+  # Per-instance relevance gate (g=sigmoid(MLP([cls, pooled_knowledge,
+  # cls*pooled_knowledge]))) that attenuates fusion on irrelevant-knowledge
+  # instances. Default off (g=1.0, no behavior change); set true to enable.
+  # gate_mlp_init: "zeros" (exact sigmoid(4) startup but barely learns in a few
+  # epochs) or "randn" (small random final weights so the gate learns from step 1).
+  gate_mlp_enabled: false
+  gate_mlp_init: zeros
+  inner:
+    _target_: ieforge.models.hf_sequence_classifier.HFSequenceClassifier
+    model_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+    name: pubmedbert_seq
+
+# Switch the collator to emit offset-batched incidence tensors (IncidenceChannel)
+# instead of the pre-encoded TensorFeatureChannel node/hyperedge embeds.
+# khp_re keeps the tensor_feature channel; only xattn overrides it here.
+knowledge:
+  collator:
+    feature_channels:
+      - _target_: knowhyper.ieforge.channels.IncidenceChannel

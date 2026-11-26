@@ -1,0 +1,4 @@
+name: bert
+_target_: ieforge.models.hf_token_classifier.HFTokenClassifier
+model_name: bert-base-cased
+tokenizer_name: bert-base-cased

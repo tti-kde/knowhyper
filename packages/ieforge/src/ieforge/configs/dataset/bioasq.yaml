@@ -1,0 +1,7 @@
+_target_: ieforge.datasets.blurb_qa.BLURBQADataset
+task: bioasq
+split: train
+name: bioasq
+batch_size: 16
+num_workers: 4
+task_family: qa

@@ -1,0 +1,15 @@
+# @package _global_
+# BC5CDR-Disease NER with entity_view knowledge integration.
+defaults:
+  - khp_ner_ev
+  - override /dataset: blurb_ner_bc5cdr_disease
+  # MUST match khp_ner_bc5cdr_disease -- see the note in khp_ner_ev_bc2gm.yaml.
+  - override /knowhyper_retriever: caching_ner_disease
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Chemical: null
+        Disease: disease

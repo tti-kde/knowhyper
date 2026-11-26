@@ -1,0 +1,17 @@
+# @package _global_
+#
+# Exact-token-count control for `ddi_graft_style_wide_real` (#189 follow-up).
+#
+# Must be matched at the WIDE budget: comparing the wide treated arm against the
+# 3-edge masked control would fold the budget change into the content effect and the
+# delta would measure two things at once.
+#
+# Differs from its `real` sibling in `evidence_mode` and NOTHING else -- pinned by
+# tests/ieforge/test_graft_style_config.py.
+defaults:
+  - ddi_graft_style_wide_real
+  - _self_
+
+knowledge:
+  collator:
+    evidence_mode: masked

@@ -1,0 +1,54 @@
+# @package _global_
+# khp_ner.yaml with strict_type_match ON.
+#
+# WHY THIS ARM EXISTS. Every recorded NER knowledge arm linked with
+# strict_type_match OFF (the linker default), so the WRONG_TYPE bucket was never
+# addressed on the NER side. On RE this turned out to be arm-dependent rather
+# than a uniform win, measured at n=10 on DDI test 2026-07-28:
+#
+#   edge_strict - base       +0.0080 p=.292   (non-strict edge - base +0.0136 p=.002)
+#   ev_cold_strict - base    +0.0139 p=.001   (non-strict ev_cold - base +0.0072 p=.289)
+#   ev_cold_strict - edge_strict  +0.0059     (non-strict pair -0.0064)
+#
+# i.e. strict is neutral-to-negative for the STRUCTURE-ONLY arm and clearly
+# positive for the ENTITY-VIEW arm. This config is the structure-only case, so the
+# RE evidence predicts little or nothing here; it exists as the matched control for
+# khp_ner_ev_strict, not as a favourite.
+#
+# The usual objection -- strict raises the share of instances that link nothing at
+# all -- was measured on RE and is not by itself a cost: stratifying DDI test by
+# empty sub-HG, the knowledge arms do not degrade on the empty stratum
+# (edge - base +0.0024), and the significant gain comes from the non-empty one. An
+# empty sub-HG is inert rather than harmful. Judge strict on end-task numbers only.
+#
+# NER-specific caveat: the second stage consumes PREDICTED mentions, so a strict
+# miss removes a retrieval seed that a first-pass false positive would otherwise
+# have linked to a wrong-typed node. Whether that is a gain depends on how much of
+# the candidate lattice is non-gold (89% at K=16), which is exactly what has not
+# been measured.
+#
+# Precompute: strict_type_match is folded into `linker_id` (see
+# knowhyper_retriever/caching.yaml), so the strict arms cannot reuse khp_ner's
+# cache -- but khp_ner_strict and khp_ner_ev_strict SHARE one, because entity-view
+# augmentation happens after raw SubHG retrieval:
+#
+#   849c05bd0d2c712a  khp_ner, khp_ner_ev                (non-strict, weighted)
+#   71b330506dd2ee18  khp_ner_strict, khp_ner_ev_strict  (strict, weighted)
+#
+# So one strict precompute serves both strict arms. Verify with
+# `scripts/resolve_cache_fingerprint.py` rather than assuming -- these two hashes
+# came from it on 2026-07-28 and both caches exist with all three splits.
+#
+# Do NOT confuse either with `b6b45dcf4d54dcc4`, the pre-fix UNIFORM strict cache
+# that caching_ner_chem.yaml quotes as its measurement source. Adding the weights
+# re-fingerprinted every NER arm, so any hash written down before that change names
+# a cache built from the retrieval this arm exists to replace.
+defaults:
+  - khp_ner
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      linker:
+        strict_type_match: true

@@ -1,0 +1,54 @@
+# @package _global_
+# BioRED EV arm with SURFACE-FALLBACK linking.
+#
+# WHY THIS ARM EXISTS. BioRED is the only dataset whose knowledge arms link by
+# normalised DB id rather than by surface string, because `BioREDPairExample`
+# carries `Entity.text` = the DB id and has no `head_mention`/`tail_mention`
+# fields for the generic `AttributeQueryBuilder` to read. Exact-id matching is
+# all-or-nothing, and the result is a coverage cliff the other datasets do not
+# have -- measured on the validation split, retrieved sub-hypergraphs that are
+# completely EMPTY (no seeds, no nodes, no hyperedges):
+#
+#     ChemProt   0%
+#     DDI        4-9%
+#     BioRED    49%
+#
+# At 49% an all-empty batch is likely, and `require_knowledge: true` then aborts
+# the run -- which is how this was found.
+#
+# `Entity.mention` IS populated for BioRED ("iodide", "L-thyroxine",
+# "sodium/iodide symporter"), and 100% of the 3,079 empty validation instances
+# carry usable surface forms -- the same kind of string ChemProt and DDI link
+# successfully. `surface_fallback: true` emits them after the DB id, so an id
+# that resolves keeps its exact hit and the surface form only matters when it
+# does not.
+#
+# This is a SEPARATE arm rather than a change to khp_biored_xattn_ev because the
+# seeds change, so the retrieval fingerprint changes, so every recorded BioRED
+# result would otherwise be invalidated. Needs its own precompute.
+#
+# CONFOUND, measured -- do not read a single delta off this arm. The surface forms
+# are appended unconditionally, so this is NOT a targeted repair of the 3,079
+# empty instances. On the validation split:
+#
+#     empty under id-only linking      3,079  gain their first seeds
+#     already non-empty                3,580  ALSO gain ~3 extra candidate seeds
+#       of those, one endpoint linked  2,173  surface forms may complete the pair
+#       of those, both linked          1,407  can only gain noise
+#
+# "An id that resolves keeps its exact hit" is true per endpoint, but the
+# sub-hypergraph around it still grows. Stratify the result by the id-only seed
+# count (0 / 1 / 2) rather than reporting one aggregate number, or a gain on the
+# empty stratum and a loss on the both-linked stratum will cancel invisibly.
+defaults:
+  - khp_biored_xattn_ev
+  - _self_
+
+knowledge:
+  pipeline:
+    query_builder:
+      surface_fallback: true
+      # Folded into linker_id by knowhyper_retriever/caching.yaml so this arm gets
+      # its own retrieval cache. Must be set together with surface_fallback --
+      # pinned by tests/ieforge/test_biored_query_builder.py.
+      surface_tag: "#surface=true"

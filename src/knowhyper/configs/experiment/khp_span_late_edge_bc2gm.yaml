@@ -1,0 +1,21 @@
+# @package _global_
+# #231 Variant 1: baseline-preserving late-logit span verifier.
+#
+# Identical to `khp_span_ner_edge_bc2gm` except the model: same dataset,
+# retriever profile, loss, metric, batch size and candidate lattice, so the only
+# difference from the #218 arm is the injection site. Keeping the retriever line
+# inherited matters -- it is dataset-specific and selecting the wrong profile
+# composes cleanly while retrieving the wrong graph.
+# BC2GM variant of the candidate-specific structure arm.
+defaults:
+  - khp_span_late_edge
+  - override /dataset: blurb_ner_bc2gm
+  - override /knowhyper_retriever: caching_ner_gene
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Chemical: null
+        Gene: protein

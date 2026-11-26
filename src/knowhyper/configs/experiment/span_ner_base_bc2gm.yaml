@@ -1,0 +1,11 @@
+# @package _global_
+# #220 Table 6 shared comparator on BC2GM. See span_ner_base.yaml for why this arm
+# is run rather than borrowed from #218's shared_zero.
+#
+# No retriever profile or mention_type_map here: this arm retrieves nothing, so the
+# knowledge-side settings that distinguish the text arms' datasets do not apply.
+# The dataset override is the whole difference.
+defaults:
+  - span_ner_base
+  - override /dataset: blurb_ner_bc2gm
+  - _self_

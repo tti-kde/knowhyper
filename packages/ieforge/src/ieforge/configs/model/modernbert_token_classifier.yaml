@@ -1,0 +1,4 @@
+name: modernbert
+_target_: ieforge.models.hf_token_classifier.HFTokenClassifier
+model_name: answerdotai/ModernBERT-base
+tokenizer_name: answerdotai/ModernBERT-base

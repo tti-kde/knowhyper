@@ -1,0 +1,6 @@
+# @package _global_
+defaults:
+  - override /task: span_ner
+  - override /model: modernbert_span_classifier
+  - override /loss: focal
+  - override /metric: entity_f1

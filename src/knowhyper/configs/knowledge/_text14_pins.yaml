@@ -1,0 +1,42 @@
+# @package _global_
+# The primehkg-FEATURES 0.12.14 text pin, in ONE place.
+#
+# WHY A SHARED FILE rather than a copy in each knowledge config. These five values
+# are consumed by `knowhyper_text_serializer/definitions_ner.yaml`, and the RE chain
+# (`knowledge/knowhyper.yaml`) already defined them. When the NER text arms were
+# added they inherited `knowledge/knowhyper_ner.yaml`, which did not -- so every one
+# of them died with `InterpolationKeyError: knowhyper.text14_features_commit`.
+#
+# The tempting fix is to paste the block into the NER config too. Do not: five
+# literals in two files is the shape that caused four separate silent-wrong-data
+# incidents (see `src/knowhyper/pins.py`), and `pins.py` itself reads these keys out
+# of `knowledge/knowhyper.yaml` by path, so a divergent second copy would be
+# invisible to it.
+#
+# ⚠️ This is the FEATURES repo, which is a DIFFERENT repo from CORE. Do not
+# interpolate `dataset_revision` (a CORE pin) into a features resolver -- that
+# wrong-repo read is exactly what #169 fixed in `composite.yaml` and what broke
+# `run_pretrain` again the moment core went 0.12.13 and features 0.12.14.
+#
+# Kept separate from the 0.12.10 `text_features_*` pin that the RE R2a arms read:
+# changing those values re-fingerprints already-completed arms and invalidates their
+# caches. A new arm gets a new key, never an edited old one.
+# DELIBERATELY STILL 0.12.14, even though features 0.12.15 exists (primehkg #470).
+#
+# This pin feeds the TEXT serializer, which reads `node_features_text` (raw strings).
+# 0.12.15 changed ONLY the derived `node_features_embedding` table: its
+# `inputs_fingerprint` (71e8bd1e…) and `provenance_registry_sha256` (b063aa6b…) are
+# byte-identical to 0.12.14, and both builds output the same three source tables.
+#
+# `source_revision` enters the serializer's own fingerprint, so bumping this would
+# move every text arm's cache path for ZERO change in the text actually served --
+# and re-fingerprinting already-completed arms is exactly what CLAUDE.md forbids.
+#
+# The EMBEDDING consumer is a different pin: `knowhyper.features_revision`, which IS
+# on 0.12.15 (see knowledge/knowhyper_ner.yaml).
+knowhyper:
+  text14_features_revision: "0.12.14"
+  text14_features_commit: 1bc142299b5ff8ed47e41b9e7c0ea3868123d0b6
+  text14_features_fingerprint: ${oc.env:PRIMEHKG_TEXT_FEATURES_FINGERPRINT,${oc.env:PRIMEHKG_FEATURES_FINGERPRINT,71e8bd1e3a64832652c92e199ffd61c48a6a7dcee393a1f31169538c1468008f}}
+  text14_features_provenance_schema: node_features_text_provenance_v1
+  text14_features_registry_sha256: b063aa6be60b175e743f97ab53b2056ad24037a4047d06bea242965736deb856

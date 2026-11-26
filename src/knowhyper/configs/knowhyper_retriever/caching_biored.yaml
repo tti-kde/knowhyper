@@ -1,0 +1,57 @@
+# @package knowledge.pipeline.injector.retriever
+# BioRED variant of `caching`: same caching wrapper, BioRED-tuned re-ranking.
+#
+# WHY THIS FILE EXISTS. `caching.yaml`'s semantics_weight is tuned for ChemProt
+# (chemical<->protein), and BioRED's pair distribution is very different:
+# Gene x Gene 39.4%, Disease x Gene 24.9%, Chem x Disease 14.6%, Chem x Gene 13.2%.
+# Inheriting `caching` unmodified leaves `disease_protein`, `protein_protein` and
+# `regulation` unweighted, so seed_incident never surfaces the edges BioRED is
+# actually about. Measured on the BioRED test split, same primehkg v0.12.3 core
+# and the same dataset fingerprint:
+#
+#   semantics_weight   linked>=2 seeds   DIRECT        drug nodes
+#   this file (21)     7.6k instances    914 (12.0%)   2,129
+#   caching (3)        2.5k instances    185 ( 2.4%)     129
+#
+# The three R2a text arms (definitions / definitions_internal / definitions_with_names)
+# and their off_short controls each inherited `caching` and so ran BioRED at 2.4%
+# DIRECT. `khp_biored_xattn.yaml` had the right weights inline all along; this file
+# is that block hoisted into the retriever group so the text arms and the fusion
+# arms cannot drift apart again. ChemProt and DDI were unaffected: `caching` IS the
+# ChemProt profile, and the DDI arms already added their own drug_drug override.
+#
+# Changing any weight here changes the cache fingerprint and forces a recompute.
+defaults:
+  - caching
+  - _self_
+
+inner:
+  semantics_weight:
+    # Suppress tissue-location noise (floods protein seeds)
+    anatomy_protein_present: 0.1
+    anatomy_protein_absent: 0.1
+    # drug-protein (Chem×Gene 13.2%)
+    drug_protein: 5.0
+    regulation: 5.0
+    moa_triad: 3.0
+    # drug-disease (Chem×Disease 14.6%)
+    indication: 3.0
+    contraindication: 3.0
+    off_label_use: 2.0
+    drug_disease_phenotype: 2.0
+    drug_disease_shared_target_bundle: 2.0
+    # disease-protein (Disease×Gene 24.9%)
+    disease_protein: 5.0
+    protein_disease_bundle: 3.0
+    disease_protein_bundle: 3.0
+    # protein-protein (Gene×Gene 39.4%)
+    protein_protein: 3.0
+    protein_complex: 3.0
+    protein_protein_bundle: 2.0
+    # drug-drug (Chem×Chem 7.9%)
+    drug_drug: 3.0
+    drug_combination: 2.0
+    # disease-disease (indirect paths)
+    disease_disease: 2.0
+    disease_phenotype_context: 1.5
+    disease_phenotype_negative: 1.5

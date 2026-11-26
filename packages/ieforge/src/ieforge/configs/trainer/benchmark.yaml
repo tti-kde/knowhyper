@@ -1,0 +1,34 @@
+# Trainer for benchmark sweeps: same optimisation as `default`, cheaper I/O.
+#
+# `default` writes full checkpoints (weights + AdamW moments) for the top 3
+# epochs plus `last`, so a 170M-parameter span model emits ~2 GB per file --
+# 681 MB of weights and 1362 MB of optimizer state. On a slow shared
+# filesystem that dominates wall-clock: a BC2GM span run measured 39 s/epoch
+# of compute but spent ~6 hours on checkpoint writes and was killed by
+# walltime before finishing 10 epochs.
+#
+# Benchmark runs only need the best epoch's metrics and weights -- they are
+# never resumed -- so drop the optimizer state and keep a single checkpoint.
+# Use `trainer=default` for anything that must be resumable.
+defaults:
+  - default
+
+callbacks:
+  - _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    dirpath: ${paths.output_dir}/checkpoints
+    filename: "epoch_{epoch:03d}-${metric.monitor_label}_{${metric.monitor}:.4f}"
+    monitor: ${metric.monitor}
+    mode: ${metric.monitor_mode}
+    save_top_k: 1
+    save_last: false
+    # Excludes optimizer_states/lr_schedulers: ~2.0 GB -> ~681 MB per file.
+    save_weights_only: true
+    auto_insert_metric_name: false
+
+  - _target_: pytorch_lightning.callbacks.EarlyStopping
+    monitor: ${metric.monitor}
+    patience: 5
+    mode: ${metric.monitor_mode}
+
+  - _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: "epoch"

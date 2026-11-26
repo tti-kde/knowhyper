@@ -1,0 +1,12 @@
+# @package _global_
+# ChemProt EV native hypergraph with the pre-registered matched arity cap.
+defaults:
+  - khp_re_xattn_ev
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      retriever:
+        inner:
+          max_hyperedge_size: 16

@@ -1,0 +1,12 @@
+# @package _global_
+defaults:
+  - khp_span_late_edge
+  - override /dataset: blurb_ner_ncbi_disease
+  - override /knowhyper_retriever: caching_ner_disease
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Disease: disease

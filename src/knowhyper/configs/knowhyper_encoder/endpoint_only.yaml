@@ -1,0 +1,12 @@
+# @package knowledge.pipeline.injector.encoder
+# Endpoint-only control: head and tail vectors, no neighborhood, no message
+# passing. Reproduces the shape of Asada et al. / Sänger & Leser inside our own
+# retrieval and evaluator so `ev_cold - endpoint` isolates the neighborhood.
+#
+# feature_store is supplied by the knowhyper_feature_store group, exactly as for
+# `allset`, so the endpoint vectors are the ones the EV arms would have seen for
+# the same entities; only the selection changes. Retrieval still runs untouched,
+# so the SubHG fingerprint is unchanged and `ev_cold` stays a valid comparator.
+_target_: knowhyper.encoders.endpoint_only.build_endpoint_encoder
+hidden_size: 768
+shuffled: false

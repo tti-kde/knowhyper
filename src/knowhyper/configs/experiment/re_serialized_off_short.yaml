@@ -1,0 +1,18 @@
+# @package _global_
+#
+# Truncation-matched OFF control for the R2b arms: reproduces the R2b source
+# truncation, then drops the knowledge tokens.
+#
+# `payload: serialized` is retained deliberately. The collator keys its payload
+# lookup on `payload`, not `mode`, so this control consumes the same
+# serialized_subhg items and therefore truncates the source exactly as R2b does.
+# Leaving it at the default would read R2a's key, find nothing, skip truncation
+# and silently stop being a matched control.
+defaults:
+  - re_serialized_subhg
+  - _self_
+
+knowledge:
+  collator:
+    mode: off_short
+    payload: serialized

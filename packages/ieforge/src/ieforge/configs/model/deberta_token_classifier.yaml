@@ -1,0 +1,4 @@
+name: deberta
+_target_: ieforge.models.hf_token_classifier.HFTokenClassifier
+model_name: microsoft/deberta-v3-base
+tokenizer_name: microsoft/deberta-v3-base

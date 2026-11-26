@@ -1,0 +1,18 @@
+# @package _global_
+#
+# PRIMARY control for `biored_serialized_subhg_surface`, on the surface cache.
+#
+# Same [HG] frame, field names, hyperedge count and connectivity; every
+# semantics/polarity VALUE replaced by a different member of the curated
+# vocabulary. Exists for the same reason as the id-only `biored_serialized_shuffled`:
+# measured against off_short, R2a's sham arm (body -> [MASK], role tag kept) moved
+# the score as much as the real-text arm did (+0.0065 vs +0.0073), so
+# "R2b - off_short" measures the frame rather than the structure.
+# "R2b - shuffled" isolates the typed content.
+#
+# Reads `e5b5ecf1b398f492`, the same cache as `khp_biored_xattn_surface` and
+# `biored_serialized_subhg_surface`, so no additional precompute is needed.
+defaults:
+  - biored_serialized_subhg_surface
+  - override /knowhyper_text_serializer: serialized_subhg_shuffled
+  - _self_

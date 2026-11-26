@@ -1,0 +1,25 @@
+# @package _global_
+# Knowledge-OFF NER baseline: PubMedBERT token classifier with no knowledge
+# pipeline. Backbone id comes from the `backbone` group (default pubmedbert).
+# Matches the same task/dataset/loss/metric as khp_ner so the entity_f1 delta is
+# attributable to knowledge integration alone.
+defaults:
+  # Shared run settings (batch_size/num_workers), the same file khp_ner inherits.
+  # FIRST because Hydra requires `override` entries to be last; `_self_` still comes
+  # after, so this config's own blocks continue to win.
+  #
+  # The baseline needs this as much as the knowledge arms do: it is the OFF row every
+  # NER contrast is drawn against, and ieforge's default is bs=16. An arm at 64 versus
+  # a baseline at 16 makes every delta a batch-size effect plus a knowledge effect,
+  # indistinguishably. #169 makes the same point for the RE baselines.
+  - _run_defaults
+  - /backbone: pubmedbert
+  - override /task: ner
+  - override /dataset: blurb_ner_bc5cdr_chem
+  - override /loss: token_cross_entropy
+  - override /metric: entity_f1
+  - _self_
+
+model:
+  _target_: ieforge.models.hf_token_classifier.HFTokenClassifier
+  name: pubmedbert_tok

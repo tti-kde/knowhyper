@@ -1,0 +1,7 @@
+# @package _global_
+# BC5CDR-Disease variant of the fixed cumulative #220 + #231 arm.
+defaults:
+  - khp_span_late_ev_warm_bc5cdr_disease
+  - /knowhyper_text_serializer: definitions_ner
+  - _span_late_text_sidecar
+  - _self_

@@ -1,0 +1,9 @@
+_target_: ieforge.tasks.re.RETask
+name: re
+entity_representation: passthrough
+negative_label: "false"
+max_length: 512
+context_strategy: full_text
+window_sentences: 0
+train_negative_downsample_ratio: 0
+train_exclude_negative: false

@@ -1,0 +1,14 @@
+# @package _global_
+defaults:
+  - khp_span_late_edge
+  - override /dataset: blurb_ner_jnlpba
+  - override /knowhyper_retriever: caching_ner_jnlpba
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        entity: null
+      linker:
+        strict_type_match: false

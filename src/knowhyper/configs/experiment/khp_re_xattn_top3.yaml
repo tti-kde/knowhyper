@@ -1,0 +1,54 @@
+# @package _global_
+#
+# `edge_top3_matched` on ChemProt: structure-only fusion over the SAME 3 hyperedges the
+# GRAFT-style text arm serializes (#189).
+#
+# WHY THIS ARM EXISTS. The paper's same-evidence comparison is
+# `edge_top3 - graft_real`, and it is only a REPRESENTATION contrast if both arms
+# see identical evidence. `khp_re_xattn` encodes up to 64 hyperedges; the R2b
+# serializer keeps at most 3. Comparing those directly would confound
+# "typed structure needs a graph encoder" with an evidence budget of 64 vs 3 --
+# a null would be unattributable between the two.
+#
+# The selector is the SAME object the serializer delegates to
+# (`select_top_ranked`), so the two arms agree on edge IDs by construction rather
+# than because two sorts happen to match. The CPU gate hashes selected edge IDs on
+# a 100-instance sample from the raw cache and requires them equal.
+#
+# Structure-only on purpose: no entity view. Attribute hyperedges would otherwise
+# compete for the 3 slots, and the arm would stop being comparable to a text arm
+# that carries no attribute payload. The selector runs BEFORE augmentation in
+# `KnowHyperInjector.inject` for the same reason.
+#
+# Needs no new precompute: the raw top_k=64 cache is unchanged and shared with
+# `khp_re_xattn`; selection happens after the cache read.
+defaults:
+  - khp_re_xattn
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      # MANDATORY for the same-evidence claim, and NOT inherited: `khp_re_xattn`
+      # links with strict_type_match=false and declares no provenance schema, while
+      # the R2a/R2b chain the GRAFT arm inherits sets BOTH. Each feeds the retrieval
+      # profile, so without these two keys this arm resolves to cache
+      # 8bf72b74a1435a17 while `re_graft_style_real` resolves to 731c244b79f7c5d2 --
+      # two DIFFERENT retrieved graphs. Both arms train fine and report plausible
+      # numbers, and `edge_top3 - graft_real` silently becomes a linking contrast.
+      # Caught by scripts/resolve_cache_fingerprint.py, not by any unit test: the
+      # selector-parity gate feeds ONE cache to both code paths, so it cannot see
+      # that the two ARMS read different caches.
+      # Pinned by tests/ieforge/test_graft_style_config.py.
+      linker:
+        strict_type_match: true
+      retriever:
+        provenance_schema: linked_mentions_role_v1
+        inner:
+          provenance_schema: linked_mentions_role_v1
+      subhypergraph_transform:
+        _target_: knowhyper.pipeline.subhg_selection.TopRankedHyperedgeSelector
+        # Must equal knowhyper_text_serializer/serialized_subhg.yaml's
+        # max_hyperedges, or the "same evidence" claim is false. Pinned by
+        # tests/ieforge/test_graft_style_config.py.
+        max_hyperedges: 3

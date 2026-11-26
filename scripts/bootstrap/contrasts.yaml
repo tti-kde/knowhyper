@@ -1,0 +1,227 @@
+# Recorded RE arms paired for the #314 rebuttal (Agent A).
+#
+# Every root is relative to $KNOWHYPER_HOME/runs. Predictions are the
+# `export/predictions.jsonl` each campaign wrote in-job (test split, best-val
+# checkpoint). `recorded_test_f1` is copied verbatim from the published
+# aggregate when the cell has no cell.json (ABCI array cells pulled without one);
+# the script refuses to pair if the recomputed F1 disagrees with it.
+#
+# All PubMedBERT arms: 10 epochs, bs=64, knowledge_lr_mult=10 (fusion arms),
+# gate_init=1.0, gate_shape=vector, fusion_norm=true, core 0.12.13 / features
+# 0.12.15, DDI SubHG cache 45caf65e8a07ea90, ChemProt 8bf72b74a1435a17. `base`
+# is text-only and shares no knowledge settings.
+
+defaults:
+  seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+arms:
+  # --- DDI ----------------------------------------------------------------
+  ddi_base:            # paper "Text-only backbone" 0.7914 (re_ddi_2026_07_29 / re_matrix_2026_07_28)
+    dataset: ddi
+    root: re_matrix_2026_07_28
+    condition: pubmedbert_base
+  ddi_edge_strict:     # paper "Structure only" 0.8045 (shared protocol)
+    dataset: ddi
+    root: re_matrix_2026_07_28
+    condition: pubmedbert_edge_strict
+  ddi_ev_cold:         # paper "+ multimodal attributes" 0.8034; comparator of binary / nosmiles / endpoint
+    dataset: ddi
+    root: re_ev_f01215_2026_07_29
+    condition: pubmedbert_ev_cold
+    recorded_test_f1: [0.8070, 0.8044, 0.8282, 0.7933, 0.7802, 0.8090, 0.8163, 0.8103, 0.7740, 0.8109]
+    recorded_from: docs/reports/data/re_ev_features0_12_15_2026_07_29/aggregate.txt
+  ddi_ev_warm:         # paper "+ cross-modal pretraining" 0.8121 -- the headline cell
+    dataset: ddi
+    root: re_evwarm_f01215_2026_07_29
+    condition: pubmedbert_ev_warm
+  ddi_binary:          # C6 2-section of the SAME cache (re_c6_binary_2026_08_03)
+    dataset: ddi
+    root: matrix/c6_binary_2026_08_03
+    condition: pubmedbert_binary
+  ddi_ev_nosmiles:     # attr:smiles masked (re_nosmiles_2026_08_03)
+    dataset: ddi
+    root: matrix/nosmiles_2026_08_03
+    condition: pubmedbert_ev_nosmiles
+  # RE-RUN 2026-09-17 (#314).  NOT the 2026-08-04 cells: those trained fine but
+  # their export re-initialised the worker-side projection from a different RNG
+  # state, so predictions.jsonl was a different model's (export F1 drifted up to
+  # 0.0165 from the trained test F1).  These cells use the deterministic
+  # ENDPOINT_PROJECTION_SEED and all 20 exports are in parity (max |delta| 0.0017,
+  # tolerance 0.0025).  The `__rerun314` suffix is the run-dir variant, which keeps
+  # the 2026-08-04 run readable beside it.
+  #
+  # Comparator `ddi_ev_cold` is the RECORDED 2026-07-29 arm and is NOT re-run: its
+  # cache 45caf65e8a07ea90 and this re-run's 2a5edac8b67e7449 retrieve identical
+  # evidence -- 5716/5716 test instances with identical hyperedge AND seed sets
+  # (cache_equivalence_2026_09_17.txt).  Only the fingerprint moved (#272 contract).
+  #
+  # The projection differs from 2026-08-04, so these test means are NOT comparable
+  # cell-by-cell with that record and must never be averaged with it.
+  ddi_endpoint:
+    dataset: ddi
+    root: matrix/rebuttal_314_2026_09_17
+    condition: pubmedbert_endpoint__rerun314
+  ddi_endpoint_shuffled:
+    dataset: ddi
+    root: matrix/rebuttal_314_2026_09_17
+    condition: pubmedbert_endpoint_shuffled__rerun314
+  ddi_graft_real:      # GRAFT-style same-evidence text branch, n=3 screen (#189)
+    dataset: ddi
+    root: graft_screen_n3
+    condition: pubmedbert_graft_real
+  ddi_graft_masked:
+    dataset: ddi
+    root: graft_screen_n3
+    condition: pubmedbert_graft_masked
+  ddi_edge_top3:
+    dataset: ddi
+    root: graft_screen_n3
+    condition: pubmedbert_edge_top3
+
+  # --- DDI instruction-tuned LLM baseline (#314 Agent B) ------------------
+  # Inference only: ONE run, no training seeds.  `seeds: [0]` names the single
+  # cell directory, it does not mean n=1 of a seed population -- the seed-level
+  # columns for this contrast are undefined and must not be reported.  Both arms
+  # are Qwen/Qwen3.5-9B @ c202236235762e1c871ad0ccb60c8ee5ba337b9a, greedy,
+  # max_new_tokens=24, one fixed prompt; they differ only in whether the final
+  # user turn carries the serialized sub-hypergraph from the SAME DDI test cache
+  # 45caf65e8a07ea90 that the recorded fusion arms read.
+  llm_noKG:
+    dataset: ddi
+    root: llm_baseline_2026_09_17
+    condition: qwen35_9b_noKG
+  llm_KG:
+    dataset: ddi
+    root: llm_baseline_2026_09_17
+    condition: qwen35_9b_KG
+
+  # --- ChemProt -----------------------------------------------------------
+  chemprot_ev_cold:
+    dataset: chemprot
+    root: re_ev_f01215_2026_07_29
+    condition: pubmedbert_ev_cold
+    recorded_test_f1: [0.7651, 0.7545, 0.7614, 0.7600, 0.7594, 0.7642, 0.7500, 0.7596, 0.7618, 0.7572]
+    recorded_from: docs/reports/data/re_ev_features0_12_15_2026_07_29/aggregate.txt
+  chemprot_ev_nosmiles:
+    dataset: chemprot
+    root: matrix/nosmiles_2026_08_03
+    condition: pubmedbert_ev_nosmiles
+
+  # C6 cap-16 pair, RE-MEASURED 2026-09-17 on the CURRENT graph.  Both arms read
+  # SubHG cache 5185435a64de86e7 and differ only in native N-ary incidence vs its
+  # canonical 2-section, so the contrast between them is internally matched.
+  #
+  # *** NOT comparable to the July C6 numbers *** (re_chemprot_c6/aggregate.txt,
+  # native 0.7754 / binary 0.7739).  That run used cache e30aa1ded42aa2c4, and the
+  # two caches agree on the retrieved hyperedge set for only 40.81% of aligned test
+  # instances (seed sets 37.27%; 2,036 instances exist only in the new cache).  The
+  # cause is linking, not a retrieval knob: chemical mentions resolve to different
+  # nodes now ("Androgen": chebi:50113 -> primekg:drug:DB01420), and ChemProt sends
+  # both CHEMICAL and GENE-Y/GENE-N through the linker.  See
+  # cache_equivalence_2026_09_17.txt.  Do not pool these with July, and do not read
+  # a difference from July as evidence about N-ary -- the graph underneath moved.
+  chemprot_ev_cold_cap16:
+    dataset: chemprot
+    root: matrix/rebuttal_314_2026_09_17
+    condition: pubmedbert_ev_cold__cap16
+  chemprot_binary_cap16:
+    dataset: chemprot
+    root: matrix/rebuttal_314_2026_09_17
+    condition: pubmedbert_binary__cap16
+
+contrasts:
+  # Reviewer 9HCf: CI on the DDI gain.  Family = the paper's primary DDI cells.
+  - name: ddi_headline_evwarm_minus_base
+    a: ddi_ev_warm
+    b: ddi_base
+    negative_label: DDI-false
+    family: primary
+    note: "paper headline +0.0207 (t=6.09, 10/10); complete configuration vs text-only"
+  - name: ddi_structure_edge_strict_minus_base
+    a: ddi_edge_strict
+    b: ddi_base
+    negative_label: DDI-false
+    family: primary
+    note: "paper 'Structure only' +0.0131 (t=2.79, 9/10) at the shared multiplier"
+  - name: ddi_attr_evcold_minus_base
+    a: ddi_ev_cold
+    b: ddi_base
+    negative_label: DDI-false
+    family: secondary
+    note: "'+ multimodal attributes' vs text-only; context for the two component controls below"
+
+  # Reviewers Cg44 / tbC8: component attribution on the recorded controls.
+  - name: ddi_nary_evcold_minus_binary
+    a: ddi_ev_cold
+    b: ddi_binary
+    negative_label: DDI-false
+    family: component
+    note: "N-ary incidence vs its 2-section on the same retrieved evidence (recorded d -0.0051 p .451)"
+  - name: ddi_smiles_evcold_minus_nosmiles
+    a: ddi_ev_cold
+    b: ddi_ev_nosmiles
+    negative_label: DDI-false
+    family: component
+    note: "attr:smiles present vs masked (recorded d +0.0105 p .206)"
+  - name: chemprot_smiles_evcold_minus_nosmiles
+    a: chemprot_ev_cold
+    b: chemprot_ev_nosmiles
+    negative_label: "false"
+    family: component
+    note: "attr:smiles present vs masked on ChemProt (recorded d +0.0051 p .225)"
+  # Declared in #314 A-2 item 6 BEFORE any result existed, so it belongs to the
+  # pre-registered `component` family -- which this takes from k=3 to k=4, making
+  # the other three members' Holm-adjusted p values slightly more conservative.
+  # That is the correct cost of adding a planned test, not a reason to isolate it.
+  - name: chemprot_nary_evcold_cap16_minus_binary_cap16
+    a: chemprot_ev_cold_cap16
+    b: chemprot_binary_cap16
+    negative_label: "false"
+    family: component
+    note: "N-ary incidence vs its 2-section on ChemProt at arity cap 16, re-measured 2026-09-17 on cache 5185435a64de86e7. A NEW measurement: that cache shares only 40.81% of test-instance edge sets with the July cap16 cache, so it must NOT be compared with the July native/binary figures (d +0.0015 p .549)."
+
+  # Reviewer 9HCf: endpoint-only control, both of its contrasts.
+  - name: ddi_endpoint_minus_evcold
+    a: ddi_endpoint
+    b: ddi_ev_cold
+    negative_label: DDI-false
+    family: endpoint
+    note: "endpoint vectors only vs full graph arm on the same evidence; 2026-09-17 re-run with the deterministic projection, all 20 exports in parity (recorded 2026-08-04 d -0.0052 p .417, from exports that were NOT the trained model)"
+  - name: ddi_endpoint_minus_shuffled
+    a: ddi_endpoint
+    b: ddi_endpoint_shuffled
+    negative_label: DDI-false
+    family: endpoint
+    note: "endpoint vs type-matched wrong endpoints; PRIMARY endpoint contrast. 2026-09-17 re-run (recorded 2026-08-04 d -0.0009 p .805, from broken exports); a null here means the arm does not use evidence IDENTITY, which is what makes endpoint-minus-evcold uninterpretable as evidence about neighbourhoods"
+  - name: ddi_endpoint_minus_base
+    a: ddi_endpoint
+    b: ddi_base
+    negative_label: DDI-false
+    family: endpoint
+    note: "endpoint vs text-only; 2026-09-17 re-run (recorded 2026-08-04 d +0.0067 p .344, from broken exports)"
+
+  # Reviewer Cg44: same-evidence text-vs-graph, n=3 screen only (Agent C not run).
+  - name: ddi_graft_real_minus_masked_n3
+    a: ddi_graft_real
+    b: ddi_graft_masked
+    negative_label: DDI-false
+    family: exploratory
+    seeds: [0, 1, 2]
+    note: "content vs [MASK] in the parallel text branch; n=3 decision screen, recorded d -0.0021"
+  - name: ddi_edge_top3_minus_graft_real_n3
+    a: ddi_edge_top3
+    b: ddi_graft_real
+    negative_label: DDI-false
+    family: exploratory
+    seeds: [0, 1, 2]
+    note: "graph encoding vs text serialisation of the SAME top-3 evidence; recorded d +0.0033"
+
+  # Reviewer tbC8: does the SAME retrieved evidence help an instruction-tuned
+  # LLM when serialized as text?  Instance-level CI only (single inference run).
+  - name: ddi_llm_KG_minus_noKG
+    a: llm_KG
+    b: llm_noKG
+    negative_label: DDI-false
+    family: llm_baseline
+    seeds: [0]
+    note: "same evidence, text-serialized, into a fixed instruction-tuned LLM; no training seeds, so ONLY the instance-level bootstrap CI is interpretable"

@@ -1,0 +1,16 @@
+# @package _global_
+#
+# R2b PRIMARY control: same [HG] frame, same field names, same hyperedge count and
+# connectivity, with every semantics/polarity VALUE replaced by a different member
+# of the curated vocabulary (see the serializer config for why a within-instance
+# permutation is NOT used -- it degenerates to a no-op on uniform instances).
+#
+# Against the SAME off_short control, R2a's sham arm (definition body -> [MASK],
+# role tag kept) scored +0.0065 p=.343 and the real-text arm +0.0073 p=.299
+# (docs/reports/data/re_r2a_c1n_n10). The frame moved the score as much as the text
+# did, so "R2b - off_short" would measure the frame, not the structure.
+# "R2b - shuffled" isolates the typed content.
+defaults:
+  - re_serialized_subhg
+  - override /knowhyper_text_serializer: serialized_subhg_shuffled
+  - _self_

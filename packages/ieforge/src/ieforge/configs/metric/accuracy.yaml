@@ -1,0 +1,5 @@
+_target_: ieforge.metrics.accuracy.AccuracyMetric
+name: accuracy
+monitor: val/accuracy
+monitor_mode: max
+monitor_label: accuracy

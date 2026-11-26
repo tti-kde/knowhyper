@@ -1,0 +1,4 @@
+_target_: ieforge.models.hf_sequence_classifier.HFSequenceClassifier
+model_name: answerdotai/ModernBERT-base
+name: modernbert_seq
+tokenizer_name: answerdotai/ModernBERT-base

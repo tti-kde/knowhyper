@@ -1,0 +1,28 @@
+# @package knowledge.pipeline.injector.text_serializer
+#
+# Wider evidence budget for the GRAFT-style budget arm (#189 follow-up).
+#
+# The n=3 screen found the parallel branch content-insensitive at 3 hyperedges
+# (~118 tokens). One candidate explanation is simply that 3 of 64 retrieved edges is
+# too thin a slice to carry a usable signal, so this raises the budget to 12.
+#
+# WHY 12 AND NOT 64. The parallel collator keeps WHOLE blocks and drops the rest, so
+# the binding constraint is the token budget, not this number: one [HG] block is
+# 25-51 PubMedBERT tokens depending on arity (a 2-member block is ~29-35 and cost grows
+# ~8-10 per additional member), so 12 blocks need ~300-610 and the arm pairs this with
+# `max_evidence_tokens: 512`. Setting 64 here would let the collator retain ~14 blocks
+# anyway and silently report 50 dropped -- the same arm with a misleading name. 12 is
+# the largest value the 512-token branch can actually hold.
+#
+# Requires NO new SubHG precompute: the serializer is not part of the retrieval cache
+# key (only the retriever profile and linker identity are), so this reads the SAME
+# top_k=64 cache as the 3-edge arms and merely keeps more of it. It DOES change the
+# serializer fingerprint, so the text cache and the arm's provenance are distinct --
+# which is what makes this a new arm rather than an edit to the screened one.
+_target_: knowhyper.pipeline.subhg_serialization.SerializedSubHGSerializer
+
+max_hyperedges: 12
+
+include_polarity: true
+shuffle_values: false
+required_provenance_schema: linked_mentions_role_v1

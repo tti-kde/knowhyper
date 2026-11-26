@@ -1,0 +1,70 @@
+# @package knowledge.pipeline.injector.retriever
+# Disease-NER retrieval profile (BC5CDR-Disease, and the base for NCBI-Disease).
+#
+# WHY THIS FILE EXISTS. See caching_ner_chem.yaml for the measurement. For a
+# DISEASE seed the unweighted flood is `disease_phenotype_context` (150,317 rows) --
+# "this disease presents with that phenotype". Like `ae_drug_phenotype` on the
+# chemical side, it is clinical consequence rather than evidence that a span names a
+# disease, and it will dominate a uniform top_k.
+#
+# Row counts for the disease-adjacent semantics (core 0.12.13):
+#
+#   disease_phenotype_context   150,317   <- floods disease seeds
+#   disease_protein              80,411
+#   disease_disease              32,194   <- the useful neighbourhood (taxonomy)
+#   contraindication             30,675
+#   drug_disease_shared_target_bundle 19,238
+#   phenotype_phenotype          18,736
+#   indication                    9,388
+#   protein_disease_bundle        7,454
+#   disease_protein_bundle        3,405
+#   off_label_use                 2,568
+#   exposure_disease              2,304
+#   disease_phenotype_negative    1,193
+#
+# WHAT THIS PROFILE OPTIMISES FOR. Recognising a disease mention. The strongest
+# signal is `disease_disease` -- the MONDO-style taxonomy that places the candidate
+# among other disease names -- plus `disease_protein` for the molecular context that
+# distinguishes a disease term from a same-spelled phenotype or anatomy word.
+#
+# A caveat worth stating: disease is the node type where core 0.12.13's synonym fix
+# helped LEAST (genuine synonyms 66.6% of nodes but each is a spelling variant, and
+# only 1.8% had any before), and `disease_phenotype_context` is demoted here even
+# though disease/phenotype confusion is a real BC5CDR-Disease error mode. If the
+# arm underperforms the uniform control specifically on phenotype-like spans, that
+# weight is the first thing to revisit -- do not read a null as "the graph has
+# nothing for disease NER".
+#
+# Hypothesis with a measured motivation, NOT a tuned optimum, and NOT yet shown to
+# improve end-task F1. The control is the same arm on the uniform profile.
+#
+# Changing any weight here changes the cache fingerprint and forces a recompute.
+defaults:
+  - caching
+  - _self_
+
+inner:
+  semantics_weight:
+    # Demote the phenotype-presentation flood; keep >0 (see caveat above).
+    disease_phenotype_context: 0.3
+    disease_phenotype_negative: 0.3
+    phenotype_phenotype: 0.3
+    ae_drug_phenotype: 0.2
+    # Disease neighbourhood -- taxonomy places the candidate among disease names.
+    disease_disease: 5.0
+    # Molecular context that distinguishes disease from phenotype/anatomy.
+    disease_protein: 4.0
+    protein_disease_bundle: 3.0
+    disease_protein_bundle: 3.0
+    # Drug-disease context (a disease named in a treatment sentence).
+    indication: 3.0
+    contraindication: 2.5
+    off_label_use: 2.0
+    drug_disease_shared_target_bundle: 2.0
+    moa_triad: 2.0
+    exposure_disease: 1.5
+    # Tissue-location and chemical-chemical noise.
+    anatomy_protein_present: 0.1
+    anatomy_protein_absent: 0.1
+    anatomy_anatomy: 0.1
+    drug_drug: 0.5

@@ -1,0 +1,18 @@
+# biolinkbert span classifier for the #202 multi-backbone span-vs-BIO sweep.
+#
+# ieforge 0.1.9 ships span configs for pubmedbert and modernbert only, while the
+# BIO side already has biolinkbert_token_classifier. This is the missing half of the
+# matched pair -- identical to pubmedbert_span_classifier except the backbone, so
+# span-vs-BIO stays a backbone-controlled contrast.
+#
+# HFSpanClassifier is backbone-agnostic: it reads hidden_size off the loaded
+# encoder config, so no code change is needed.
+#
+# max_span_width MUST stay 12 to match the pinned task default; the model and the
+# task both carry it and a mismatch silently changes which candidates exist.
+name: biolinkbert_span
+_target_: ieforge.models.hf_span_classifier.HFSpanClassifier
+model_name: michiyasunaga/BioLinkBERT-base
+tokenizer_name: michiyasunaga/BioLinkBERT-base
+max_span_width: 12
+dropout: 0.1

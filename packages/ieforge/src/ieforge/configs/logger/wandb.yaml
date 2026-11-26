@@ -1,0 +1,6 @@
+_target_: pytorch_lightning.loggers.WandbLogger
+project: ieforge
+name: ${task.name}-${dataset.name}-${model.name}
+save_dir: outputs/logs
+offline: false
+log_model: false

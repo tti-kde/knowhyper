@@ -1,0 +1,33 @@
+# @package _global_
+# KnowHyper RE experiment.
+#
+# We do NOT chain `- /experiment: re` here: composing one experiment inside
+# another experiment's defaults while also overriding the `knowledge` group
+# (which carries its own nested defaults) triggers a non-terminating defaults-
+# tree expansion (RecursionError) in Hydra 1.3.x. Instead we inline the same
+# group overrides.
+#
+# Source of truth: ieforge experiment/re.yaml (pinned rev 0b9128c) supplies
+# task=re_blurb, dataset=chemprot, loss=sequence_cross_entropy, metric=relation_f1.
+# Keep those four in sync with re.yaml. Intentional differences vs re.yaml:
+#   - model: knowledge_aware_pubmedbert_sequence_classifier — the KnowledgeAwareModel
+#     wrapper around biomedical PubMedBERT that prepends the soft-prompt embeds
+#     the KnowHyper pipeline produces (the plain classifier would ignore them).
+#   - knowledge: knowhyper (adds the KnowHyper soft-prompt knowledge pipeline)
+defaults:
+  - override /task: re_blurb
+  - override /dataset: chemprot
+  - override /loss: sequence_cross_entropy
+  - override /metric: relation_f1
+  - override /model: knowledge_aware_pubmedbert_sequence_classifier
+  - override /knowledge: knowhyper
+  - override /knowhyper_encoder: allset
+  - override /knowhyper_retriever: caching
+  - _self_
+
+# re_blurb omits two keys that ieforge's _build_task reads directly
+# (context_strategy, window_sentences); supply the RETask defaults inline so the
+# experiment trains without extra +task.* overrides on the CLI.
+task:
+  context_strategy: full_text
+  window_sentences: 0

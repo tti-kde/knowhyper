@@ -1,0 +1,18 @@
+templates:
+  natural_sentence_v1:
+    moa_triad: "{drug} targets {protein} in the context of {disease} (mechanism of action)"
+    ae_drug_phenotype: "{drug} is associated with adverse effect {phenotype}"
+    drug_disease_phenotype: "{drug} treats {disease} with observed phenotype {phenotype}"
+    disease_phenotype_context: "{disease} presents with phenotype {phenotype} in context {context}"
+    indication: "{drug} is indicated for {disease}"
+    contraindication: "{drug} is contraindicated for {disease}"
+    off_label_use: "{drug} is used off-label for {disease}"
+    drug_protein: "{drug} interacts with protein {protein}"
+    protein_disease: "{protein} is associated with {disease}"
+    disease_protein: "{disease} is associated with protein {protein}"
+    protein_protein: "{protein_1} interacts with {protein_2}"
+    drug_drug: "{drug_1} interacts with {drug_2}"
+    phenotype_phenotype: "{phenotype_1} is related to {phenotype_2}"
+    disease_disease: "{disease_1} is related to {disease_2}"
+    drug_disease_shared_target_bundle: "{drug} and {disease} share target {protein}"
+    _fallback: "{semantics}: {nodes_join}"

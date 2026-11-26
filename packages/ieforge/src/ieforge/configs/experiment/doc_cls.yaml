@@ -1,0 +1,7 @@
+# @package _global_
+defaults:
+  - override /task: doc_cls
+  - override /dataset: hoc
+  - override /model: modernbert_sequence_classifier
+  - override /loss: multilabel_bce
+  - override /metric: multilabel_f1

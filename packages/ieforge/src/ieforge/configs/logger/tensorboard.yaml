@@ -1,0 +1,3 @@
+_target_: pytorch_lightning.loggers.TensorBoardLogger
+save_dir: outputs/logs
+name: ${task.name}-${dataset.name}-${model.name}

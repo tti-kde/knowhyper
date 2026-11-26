@@ -1,0 +1,7 @@
+_target_: ieforge.metrics.biored_pair_type_novelty_f1.BioREDPairTypeNoveltyF1
+name: biored_pair_type_novelty_f1
+negative_label: None
+exclude_negative: true
+monitor: val/f1
+monitor_mode: max
+monitor_label: f1

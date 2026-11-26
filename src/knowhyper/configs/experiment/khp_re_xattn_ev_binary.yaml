@@ -1,0 +1,11 @@
+# @package _global_
+# ChemProt EV with the same cached evidence projected to canonical binary edges.
+defaults:
+  - khp_re_xattn_ev
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      encoder:
+        incidence_projection: binary_clique

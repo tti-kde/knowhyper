@@ -1,0 +1,20 @@
+# @package _global_
+# Fixed cumulative NER contract: preserve #220's sequence-B entity text verbatim while
+# collating #231's graph incidence and candidate-span channels from the SAME contexts.
+# This file contains no model/head/LR choices; those remain the inherited ev_warm values.
+knowledge:
+  pipeline:
+    injector:
+      text_serializer_mode: graph_sidecar
+  collator:
+    _target_: knowhyper.ieforge.text_collator.PairAwareTextKnowledgeCollator
+    require_prompts: false
+    feature_channels:
+      - _target_: knowhyper.ieforge.channels.IncidenceChannel
+      - _target_: knowhyper.ieforge.channels.NERMentionSpanChannel
+    max_length: ${task.max_length}
+    # Reuse #220's measured sequence-B budget exactly. max_targets=8 lives in
+    # definitions_ner; the graph retriever keeps #231's independent top_k=64.
+    max_knowledge_tokens: 256
+    min_source_tokens: 256
+    mode: definitions

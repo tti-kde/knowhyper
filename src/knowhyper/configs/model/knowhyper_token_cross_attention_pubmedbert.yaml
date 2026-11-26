@@ -1,0 +1,17 @@
+# Token-level cross-attention knowledge model with PubMedBERT inner.
+_target_: knowhyper.ieforge.models.TokenCrossAttentionKnowledgeModel
+_recursive_: false
+name: knowhyper_token_cross_attention
+tokenizer_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+hidden_size: 768
+num_heads: 8
+feature_dim: 768
+encoder_layers: 2
+encoder_heads: 4
+require_knowledge: true
+gate_init: 0.0
+gate_shape: scalar
+inner:
+  _target_: ieforge.models.hf_token_classifier.HFTokenClassifier
+  model_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+  name: pubmedbert_tok

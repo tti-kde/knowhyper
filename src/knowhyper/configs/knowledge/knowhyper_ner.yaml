@@ -1,0 +1,101 @@
+# @package _global_
+# NER knowledge pipeline: same retrieval/encoding as RE but with the NER
+# injector (reads a flat predicted entity list instead of a head/tail pair) and a
+# prediction-backed query builder reads {split}.jsonl and never uses gold entities.
+# predictions_root must be supplied by the experiment command.
+defaults:
+  - _text14_pins
+  - /knowhyper_linker: sapbert
+  - /knowhyper_retriever: rule
+  - /knowhyper_encoder: structure_only
+  - /knowhyper_feature_store: single_vector
+  - /knowhyper_integrator: incidence
+  - _self_
+
+knowhyper:
+  storage_root: ${oc.env:KNOWHYPER_HOME,${oc.env:HOME}/.knowhyper}
+  subhg_cache_schema_version: 2
+  retrieval_semantics_version: 1
+  # Matches the RE pin (configs/knowledge/knowhyper.yaml): package v0.12.14 pins
+  # core "0.12.13". Was core 0.12.0 (fingerprint b00a9e4f...) through every NER
+  # experiment up to 2026-07-27, so nothing recorded before then shares a SubHG
+  # cache with this config -- the NER caches must be rebuilt, not reused.
+  #
+  # Why move it: 0.12.0 predates the label_embedding_v1 sidecar, so the SapBERT
+  # dense preset this config selects had no ANN index to use, and synonyms were
+  # degenerate ([local_id, name]; genuine coverage 3.5%, drug 0%). 0.12.13 fixes
+  # the synonyms (drug 25.9%, protein 65.2%, overall 27.5%) and ships the sidecar.
+  #
+  # ⚠️ Synonyms did NOT change linking on the RE arms -- 512 ChemProt instances
+  # selected byte-identical seed ids across the two pins, because dense retrieval
+  # already subsumed surface variants. Do not predict a linking gain here; measure.
+  primehkg_rev: v0.12.14
+  dataset_hub_repo: ${oc.env:PRIMEHKG_CORE,nishide-dev/primehkg-core}
+  dataset_revision: "0.12.13"
+  dataset_fingerprint: ${oc.env:PRIMEHKG_CORE_FINGERPRINT,00e2c7ea123617ab2ab1a8880756255a766ded479261bb37c9610919aa4c9c04}
+  # The FEATURES repo is a different repo from CORE above, so it needs its own pin
+  # (#169). `composite.yaml` used to interpolate `${knowhyper.dataset_revision}` --
+  # a CORE revision -- into a FEATURES resolver, which worked only while both repos
+  # sat at the same tag. Keep this stated explicitly even when the values look
+  # related: an explicit pin is verifiable, an implicit one is a latent wrong-repo
+  # read. Here they are deliberately DIFFERENT (core 0.12.13 / features 0.12.14),
+  # which is the pairing #165 verified as complete on the Hub and on ABCI.
+  #
+  # No features_fingerprint: composite.yaml consumes only the revision, and the core
+  # fingerprint above is NOT the features repo's fingerprint. Copying it here to look
+  # complete would plant exactly the kind of plausible-but-wrong literal this chain
+  # just got bitten by.
+  # 0.12.15, NOT 0.12.14. This pin feeds ONLY `composite.yaml` -> the attr-node
+  # vectors, and 0.12.14's `node_features_embedding` had ZERO rows for smiles and
+  # protein (primehkg #470): `ModalityIndex.lookup` returned None and the attr node
+  # was left as `torch.zeros(768)` -- still in the graph, still attended over,
+  # contributing nothing. Every recorded NER EV result ran that way.
+  #
+  # 0.12.15 restores them WITHOUT moving 0.12.14 (which stays immutable):
+  #   smiles 6,950 (ChemBERTa-77M, dim 384) | protein 20,219 (ESM2-t6-8M, dim 320)
+  #   | synonym_context 37,817 (PubMedBERT, dim 768)  -> 500,495 rows total
+  # `AttributeNodeFeatureStore.features()` zero-pads by each vector's real dim, so
+  # the mixed 320/384/768 dims are handled.
+  #
+  # SAFE to bump without re-precomputing: `features_revision` is NOT part of the
+  # SubHG method fingerprint (verified by re-resolving every EV arm -- all unchanged),
+  # so no retrieval cache is invalidated. It DOES change what the attr nodes carry,
+  # so results measured before this are not comparable on the attribute side.
+  features_revision: "0.12.15"
+
+knowledge:
+  dataset_path: null
+  dataset:
+    _target_: primehkg.load_core_dataset
+    hub_repo_id: ${knowhyper.dataset_hub_repo}
+    revision: ${knowhyper.dataset_revision}
+    expected_fingerprint: ${knowhyper.dataset_fingerprint}
+  pipeline:
+    _target_: ieforge.knowledge.core.pipeline.KnowledgePipeline
+    source:
+      _target_: knowhyper.ieforge.noop.NoOpKnowledgeSource
+    builder:
+      _target_: knowhyper.ieforge.noop.NoOpKnowledgeBuilder
+    retriever:
+      _target_: knowhyper.ieforge.noop.NoOpRetriever
+    query_builder:
+      _target_: knowhyper.ieforge.ner_predictions.NERPredictionQueryBuilder
+      predictions_root: null
+      field: text
+      metadata_fields: [dataset, split, id]
+    injector:
+      _target_: knowhyper.ieforge.injector.NERKnowHyperInjector
+      top_k: 64
+      instance_metadata_fields: [dataset, split, id]
+      mention_type_map:
+        Chemical: drug
+      expand_abbreviations: false
+  collator:
+    enabled: true
+    train_enabled: true
+    eval_enabled: true
+    _target_: ieforge.knowledge.integration.collators.KnowledgeCollator
+    pipeline: ${knowledge.pipeline}
+    require_prompts: false
+    feature_channels:
+      - _target_: knowhyper.ieforge.channels.IncidenceChannel

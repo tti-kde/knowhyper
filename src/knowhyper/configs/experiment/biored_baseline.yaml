@@ -1,0 +1,28 @@
+# @package _global_
+# Knowledge-OFF baseline for the BioRED pair-existence comparison: same
+# task/dataset/loss/metric and the SAME PubMedBERT backbone as the knowledge
+# arms, with NO knowledge — so any biored_f1 delta is attributable to knowledge.
+# Backbone id comes from the `backbone` group (default pubmedbert). BioRED's
+# binary task uses the plain "false" negative label (set explicitly below;
+# biored_f1 itself defaults to None).
+defaults:
+  # Shared mandatory run settings (batch_size/num_workers). FIRST because Hydra
+  # requires `override` entries to be last in a defaults list; `_self_` still
+  # comes after, so this config's own blocks continue to win.
+  - _run_defaults
+  - /backbone: pubmedbert
+  - override /task: biored_pair
+  - override /dataset: biored
+  - override /loss: sequence_cross_entropy
+  - override /metric: biored_f1
+  - _self_
+
+dataset:
+  task: biored_pair
+
+metric:
+  negative_label: "false"
+
+model:
+  _target_: ieforge.models.hf_sequence_classifier.HFSequenceClassifier
+  name: pubmedbert_seq

@@ -1,0 +1,14 @@
+# @package _global_
+defaults:
+  - span_ner_retrieved_text
+  - override /dataset: blurb_ner_jnlpba
+  - override /knowhyper_retriever: caching_ner_jnlpba
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        entity: null
+      linker:
+        strict_type_match: false

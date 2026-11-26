@@ -1,0 +1,14 @@
+# @package knowledge.pipeline.injector.encoder
+# Role/semantics-aware AllSetTransformer encoder. feature_store.dim is a fallback
+# used only when the vector_node_v1 sidecar is absent; with the sidecar present
+# the store's dim follows the index automatically.
+# The feature_store comes from the knowhyper_feature_store group (default:
+# single_vector); override /knowhyper_feature_store: multimodal to switch to
+# MultiModalFeatureStore without modifying this file.
+_target_: knowhyper.encoders.allset.AllSetHyperEncoder
+hidden_size: 768
+num_layers: 2
+num_heads: 4
+# Structural control. binary_clique applies a deterministic 2-section only when
+# building incidence; retrieval and the cached SubHypergraph remain unchanged.
+incidence_projection: hypergraph

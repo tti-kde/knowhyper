@@ -1,0 +1,46 @@
+# @package _global_
+#
+# GRAFT-style with a WIDER evidence budget, `real` arm (#189 follow-up).
+#
+# WHY THIS ARM EXISTS. The n=3 screen returned `real - masked` ~= 0 on all three
+# datasets. One candidate explanation was that 3 of 64 retrieved hyperedges (~118
+# tokens) was simply too thin a slice for the branch to find anything in. This arm
+# tests that and nothing else:
+# 12 hyperedges into a 512-token evidence branch.
+#
+# A NEW ARM, not an edit. The pre-registration for the screen forbids changing the
+# screened arms in response to their scores; the serializer fingerprint differs here,
+# so this gets its own provenance and the screened result stands untouched.
+#
+# Needs NO new SubHG precompute -- the serializer is not part of the retrieval cache
+# key, so this reads the same top_k=64 cache as the 3-edge arms.
+#
+# Its control is `re_graft_style_wide_masked`, NOT the 3-edge masked arm: an
+# exact-token-count control has to be matched at the SAME budget, or the contrast
+# would fold the budget change into the content effect.
+defaults:
+  - re_graft_style_real
+  - override /knowhyper_text_serializer: serialized_subhg_wide
+  - _self_
+
+knowledge:
+  collator:
+    # Measured against the real PubMedBERT tokenizer, one [HG] block spans 25-51
+    # tokens depending on arity (median ~40), so 510 usable holds 10 blocks in the
+    # worst case and ~20 in the best. 12 is therefore the binding limit on TYPICAL
+    # instances but NOT guaranteed on wide ones -- high-arity instances can still lose
+    # a block or two to truncation, which knowledge_evidence_items_dropped records
+    # per row. That is acceptable here (the contrast is against a masked arm budgeted
+    # identically, so both sides drop the same blocks) but it is NOT the same as
+    # "k binds always", which an earlier version of this comment claimed.
+    #
+    # What 512 does buy unambiguously: at the screened arm's 128 tokens only 2-5 of
+    # the 12 blocks fit, so the arm would silently have been the 3-edge arm under a
+    # new name.
+    max_evidence_tokens: 512
+    # Must be set to the SAME value. It is inherited from the R2b arm and controls
+    # nothing on this path, but the collator rejects a disagreement on purpose: a
+    # stale 128 here next to max_evidence_tokens=512 is exactly the "I raised the
+    # budget and nothing changed" confusion the guard exists to prevent. Keeping the
+    # two in lockstep is the intended way to satisfy it.
+    max_knowledge_tokens: 512

@@ -1,0 +1,3 @@
+_target_: ieforge.tasks.qa.QATask
+name: qa
+max_length: 512

@@ -1,0 +1,5 @@
+# @package _global_
+defaults:
+  - span_ner_base
+  - override /dataset: blurb_ner_jnlpba
+  - _self_

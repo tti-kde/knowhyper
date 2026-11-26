@@ -1,0 +1,74 @@
+# @package knowledge.pipeline.injector.retriever
+# Gene/protein-NER retrieval profile (BC2GM).
+#
+# WHY THIS FILE EXISTS. See caching_ner_chem.yaml for the measurement that started
+# this: with `semantics_weight: null` the top_k budget goes to whichever semantics
+# has the most rows, because the weight is a MULTIPLIER. For a PROTEIN seed the
+# row-count ranking is worse than for chemicals -- `anatomy_protein_present` alone
+# has 1,518,203 rows in core 0.12.13, the largest of any semantics, and it says
+# only "this protein is present in that tissue". Unweighted, it floods every protein
+# seed. `caching_biored.yaml` already suppresses it to 0.1 for exactly this reason.
+#
+# Row counts for the protein-adjacent semantics (core 0.12.13, hyperedges+support):
+#
+#   anatomy_protein_present   1,518,203   <- tissue location, floods protein seeds
+#   protein_protein             321,075   <- the useful neighbourhood
+#   regulation                  202,595
+#   bioprocess_protein          144,805
+#   drug_protein                 93,413
+#   cellcomp_protein             83,402
+#   disease_protein              80,411
+#   molfunc_protein              69,530
+#   pathway_protein              42,646
+#   protein_protein_bundle       16,977
+#   protein_complex               9,418
+#
+# WHAT THIS PROFILE OPTIMISES FOR. Recognising a gene/protein mention. The signal
+# is the seed's neighbourhood among other proteins (protein_protein,
+# protein_complex, regulation) plus the functional annotations that make a gene
+# symbol interpretable (bioprocess/molfunc/pathway). Gene NER is also where the
+# synonym asymmetry matters: core 0.12.13's genuine synonyms are 65.2% on protein
+# and are gene-symbol<->full-name pairs (`NAT2` <-> `Arylamine N-acetyltransferase
+# 2 ...`), which is the classic BC2GM difficulty -- so the lexical neighbourhood is
+# expected to carry more here than on the chemical side.
+#
+# Localisation semantics (anatomy/cellcomp) are demoted, not deleted: where a
+# protein sits is weak evidence for the span, but a non-zero weight keeps an
+# instance from going empty when that is all it has.
+#
+# Hypothesis with a measured motivation, NOT a tuned optimum, and NOT yet shown to
+# improve end-task F1. The control is the same arm on the uniform profile.
+#
+# Changing any weight here changes the cache fingerprint and forces a recompute.
+defaults:
+  - caching
+  - _self_
+
+inner:
+  semantics_weight:
+    # Suppress the two floods (1.5M and 20k rows of "protein is/isn't in tissue").
+    anatomy_protein_present: 0.1
+    anatomy_protein_absent: 0.1
+    anatomy_anatomy: 0.1
+    cellcomp_protein: 0.5
+    cellcomp_cellcomp: 0.2
+    # Protein neighbourhood -- the core signal for a gene mention.
+    protein_protein: 5.0
+    protein_complex: 4.0
+    protein_protein_bundle: 3.0
+    regulation: 4.0
+    # Function/process annotation: what makes a gene symbol interpretable.
+    bioprocess_protein: 3.0
+    molfunc_protein: 3.0
+    pathway_protein: 2.5
+    # Cross-type context (a gene named in a drug or disease sentence).
+    drug_protein: 3.0
+    disease_protein: 3.0
+    moa_triad: 2.0
+    protein_disease_bundle: 2.0
+    disease_protein_bundle: 2.0
+    phenotype_protein: 1.5
+    # Chemical-side consequence is irrelevant to a gene span.
+    ae_drug_phenotype: 0.1
+    contraindication: 0.1
+    drug_drug: 0.5

@@ -1,0 +1,4 @@
+_target_: ieforge.models.hf_sequence_classifier.HFSequenceClassifier
+model_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+name: pubmedbert_seq
+tokenizer_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext

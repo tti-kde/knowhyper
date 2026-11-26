@@ -1,0 +1,77 @@
+# @package _global_
+# NER text arm: name + synonyms + description injected as INPUT TOKENS, no graph
+# encoder. BC5CDR-Chem; the dataset variants override dataset + retriever profile.
+#
+# REQUIRED at runtime: knowledge.pipeline.query_builder.predictions_root=...
+#
+# THE HYPOTHESIS this arm tests, and why it is not the RE text arm again. On RE,
+# retrieved KG text was closed as null (6 test contrasts across C1/C1-internal/C1n)
+# because a relation is not read off an entity's prose. NER asks a different
+# question: is this span a chemical/gene/disease NAME? The natural evidence for
+# that is OTHER NAMES for the same entity -- which is why this arm carries
+# `synonym_context`, and why it could not be built before features 0.12.14 added it
+# (0.12.10 has no synonym field at all). Do NOT carry the RE null over as a
+# prediction; it was measured on semantic prose, not on lexical surfaces.
+defaults:
+  - ner_baseline
+  - /knowhyper_text_serializer: definitions_ner
+  - override /knowledge: knowhyper_ner
+  - override /knowhyper_retriever: caching_ner_chem
+  - _self_
+
+knowledge:
+  collator:
+    _target_: knowhyper.ieforge.text_collator.PairAwareTextKnowledgeCollator
+    require_prompts: false
+    feature_channels: []
+    max_length: ${task.max_length}
+    # ---------------------------------------------------------------------------
+    # BUDGET: measured with the production tokenizer, not guessed.
+    #
+    # `_truncate_knowledge` divides the budget ROUND-ROBIN over EVERY retrieved
+    # item, and each item costs ~4 tokens of `[ hg ] ... [ /hg ]` wrapper before any
+    # body. With the retriever's default 64 items that is 256 tokens of pure
+    # wrapper, so:
+    #   64 items @ 128 -> raises ValueError ("too small to preserve boundary tags")
+    #   64 items @ 256 -> 0 body tokens per item: the payload renders as bare tags
+    #                     and the treated arm becomes byte-identical to the control
+    #   32 items @ 128 -> 0 body tokens per item (same failure, no exception)
+    #    8 items @ 256 -> 28 body tokens per item  <- chosen
+    #
+    # A synonym list needs ~15-25 tokens to carry more than one surface form, so 8
+    # items x 28 tokens is the smallest configuration where this arm can express
+    # its own hypothesis. RE's arm used 128 tokens; copying that number here would
+    # have produced a silent no-op, which is the failure recorded in the
+    # `text-payload-budget-splits-across-items` note.
+    #
+    # min_source_tokens is 256 rather than RE's 256-of-512 for the same reason it
+    # matters there: NER abstracts are long, and the source must not be truncated
+    # to make room for knowledge -- entity_f1 is computed over the source tokens.
+    max_knowledge_tokens: 256
+    min_source_tokens: 256
+    mode: definitions
+  pipeline:
+    injector:
+      # Cap the item count to match the budget above. MEASURED on 15 real
+      # BC5CDR-Chem instances: the serializer emits ONE item per linked mention, and
+      # NER instances carry 1-2 mentions, so this cap never actually binds -- items
+      # came out 0-2 with a raw payload of 54-286 tokens. It stays as a ceiling
+      # against a pathological instance rather than as the operative limit.
+      #
+      # The number that DOES matter is max_knowledge_tokens above: at RE's 128 the
+      # 232- and 286-token payloads would have been truncated to roughly half a
+      # synonym list.
+      top_k: 8
+      encoder: null
+      integrator: null
+      linker:
+        strict_type_match: true
+      retriever:
+        # linked_mentions_v1, NOT the RE arms' linked_mentions_role_v1: the role
+        # variant demands pair_role head/tail on every mention, which a flat NER
+        # prediction list can never satisfy. Still set EXPLICITLY rather than left
+        # null, because it enters the cache fingerprint -- an implicit value would
+        # make the arm's cache identity depend on retrieval-time inference.
+        provenance_schema: linked_mentions_v1
+        inner:
+          provenance_schema: linked_mentions_v1

@@ -1,0 +1,28 @@
+# BioBERT span classifier, completing the four-backbone span baseline.
+#
+# Identical to pubmedbert_span_classifier except the backbone, so span stays a
+# backbone-controlled comparison. max_span_width MUST stay 12 to match the task
+# default; both carry it and a mismatch silently changes the candidate set.
+#
+# Pinned to v1.2, NOT the v1.1 that ieforge's biobert_token_classifier uses.
+# v1.1's published snapshot is unusable offline as cached: its `config.json`
+# predates the `model_type` field, so AutoConfig raises "Unrecognized model",
+# and the snapshot ships NO tokenizer at all. v1.2 is complete in both the local
+# and the reservation HF caches (same snapshot hash 67c9c25b, with config.json +
+# pytorch_model.bin + vocab.txt, `model_type: bert`, vocab_size 28996 matching
+# the embedding matrix), so it resolves with no cache surgery.
+#
+# Do not "fix" v1.1 by copying a tokenizer in from another repo. That makes the
+# run depend on a hand-edited cache which no other machine has, and an uncased or
+# 30522-entry vocab would mismatch the embedding matrix and train on garbled ids
+# without failing.
+#
+# NOTE the BIO arm (biobert_token_classifier, ieforge-side) still points at v1.1
+# and would need the same treatment. Irrelevant here: BIO was dropped from the
+# paper, so only the span arm runs.
+name: biobert_span
+_target_: ieforge.models.hf_span_classifier.HFSpanClassifier
+model_name: dmis-lab/biobert-base-cased-v1.2
+tokenizer_name: dmis-lab/biobert-base-cased-v1.2
+max_span_width: 12
+dropout: 0.1

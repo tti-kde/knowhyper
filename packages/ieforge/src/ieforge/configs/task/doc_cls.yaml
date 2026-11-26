@@ -1,0 +1,4 @@
+_target_: ieforge.tasks.doc_cls.DocClassificationTask
+name: doc_cls
+threshold: 0.5
+max_length: 512

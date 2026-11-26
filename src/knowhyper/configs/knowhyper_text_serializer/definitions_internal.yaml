@@ -1,0 +1,55 @@
+# @package knowledge.pipeline.injector.text_serializer
+#
+# C1-internal: the C1 definition arm WITHOUT the redistribution filter.
+#
+# Why this exists. C1 (definitions.yaml) sets `audience: publishable`, which
+# requires complete upstream provenance and `payload_class: semantic_definition`.
+# That is a REDISTRIBUTION-readiness rule, and it silently removed the most
+# informative text these datasets have — notably PrimeKG's 4,591 drug
+# descriptions (DrugBank 5.1.8 prose, node-level, `usage_scope: internal_only`,
+# i.e. "internal research fine, no redistribution").
+#
+# Nothing here redistributes: raw text stays in a 0600 cache excluded from Git
+# and ABCI snapshots, and only aggregates reach the paper. Applying a
+# redistribution filter therefore bought nothing and cost coverage — on DDI it
+# left only ChEBI chemical definitions (21.8% of test instances got no text at all;
+# an earlier note said 19.1%, superseded by the direct cache measurement in
+# docs/reports/data/re_r2a_internal_coverage/coverage.txt)
+# instead of the drug descriptions, so the C1 null measured "publishable text
+# does not help", not "text does not help".
+#
+# This arm keeps EVERYTHING else identical to C1 (same modalities, same
+# selection order, same cache policy), so the contrast against C1 isolates the
+# effect of the redistribution filter.
+#
+# Relative to C1 this file drops four keys, not one, but the other three are
+# forced consequences of `audience: legacy` rather than independent choices
+# (see text_serialization.py):
+#   - `license_registry: null`  -- the constructor hard-raises if audience is not
+#     legacy and no registry is given (:569), so legacy is the only setting that
+#     permits dropping it.
+#   - `allowed_payload_classes` -- `_select` routes to `_legacy_select` whenever
+#     the registry is None (:713), and the payload-class filter is only consulted
+#     inside the registry branch, so the key would be dead config.
+#   - `expected_text_provenance_schema` / `expected_provenance_registry_sha256`
+#     -- only required by `requires_complete_upstream_provenance`, which is
+#     exactly `audience == "publishable"` (:595).
+# So the arm is single-variable in effect even though it is not single-key.
+_target_: knowhyper.pipeline.text_serialization.RetrievedDefinitionsSerializer
+evidence_index:
+  _target_: knowhyper.pipeline.text_serialization.load_definition_evidence_index
+  # Raw node_features_text only. Embedding sidecars are never decoded.
+  features_dir:
+    _target_: knowhyper.features.modality_index.resolve_text_features_dir
+    revision: ${knowhyper.text_features_commit}
+  modalities: [description, definition]
+  expected_commit: ${knowhyper.text_features_commit}
+  expected_inputs_fingerprint: ${knowhyper.text_features_fingerprint}
+modalities: [description, definition]
+license_registry: null
+audience: legacy
+raw_text_cache_mode: restricted
+cache_root: ${knowhyper.storage_root}/cache/text/definitions_internal
+source_revision: ${knowhyper.text_features_revision}@${knowhyper.text_features_commit}
+source_fingerprint: ${knowhyper.text_features_fingerprint}
+required_provenance_schema: linked_mentions_role_v1

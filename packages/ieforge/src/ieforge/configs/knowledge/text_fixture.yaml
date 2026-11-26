@@ -1,0 +1,32 @@
+# @package _global_
+knowledge:
+  pipeline:
+    _target_: ieforge.knowledge.core.pipeline.KnowledgePipeline
+    source:
+      name: fixture_corpus
+      _target_: ieforge.knowledge.backends.corpus.FixtureCorpusSource
+    builder:
+      name: corpus
+      _target_: ieforge.knowledge.backends.corpus.CorpusBuilder
+      embedder:
+        name: hashing
+        _target_: ieforge.knowledge.backends.corpus.HashingEmbedder
+        dim: 256
+    retriever:
+      name: dense
+      _target_: ieforge.knowledge.backends.retrievers.DenseRetriever
+      embedder:
+        name: hashing
+        _target_: ieforge.knowledge.backends.corpus.HashingEmbedder
+        dim: 256
+      top_k: 5
+    injector:
+      name: text_context
+      _target_: ieforge.knowledge.backends.retrievers.TextContextInjector
+      max_chars: 2000
+    query_builder:
+      name: attribute
+      _target_: ieforge.knowledge.integration.query_builders.AttributeQueryBuilder
+      field: question
+      metadata_fields:
+        - id

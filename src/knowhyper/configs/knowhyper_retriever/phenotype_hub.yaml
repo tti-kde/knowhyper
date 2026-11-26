@@ -1,0 +1,11 @@
+# @package knowledge.pipeline.injector.retriever
+# Mirrors primehkg PHENOTYPE_HUB_RETRIEVAL: stronger hub down-weighting and a
+# hyperedge-size cap, for hub-heavy phenotype subgraphs.
+_target_: knowhyper.ieforge.primehkg_backend.PrimeHKGRetriever
+dataset: ${knowledge.dataset}
+candidate_mode: seed_incident
+top_k: 64
+hub_penalty: 2.0
+max_hyperedge_size: 8
+semantics_weight:
+  drug_disease_phenotype: 0.85

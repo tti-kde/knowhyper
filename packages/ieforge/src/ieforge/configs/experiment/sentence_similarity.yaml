@@ -1,0 +1,7 @@
+# @package _global_
+defaults:
+  - override /task: sentence_similarity
+  - override /dataset: biosses
+  - override /model: modernbert_sequence_regressor
+  - override /loss: mse
+  - override /metric: pearson

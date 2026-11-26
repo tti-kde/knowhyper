@@ -1,0 +1,10 @@
+_target_: knowhyper.ieforge.ner_oof.NERFoldDataset
+task: ${dataset.task}
+name: ${dataset.name}_oof
+batch_size: ${dataset.batch_size}
+num_workers: ${dataset.num_workers}
+task_family: ner
+num_folds: 5
+fold: 0
+fold_seed: 42
+role: train

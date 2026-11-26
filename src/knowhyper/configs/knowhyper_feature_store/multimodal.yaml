@@ -1,0 +1,18 @@
+# @package knowledge.pipeline.injector.encoder.feature_store
+# MultiModalFeatureStore: loads per-modality attribute embeddings from the
+# primehkg v0.12.0 features sidecar.  The modalities_by_type dict controls
+# which channels are stacked per node type.  display_name is always injected
+# automatically by the store (universal across all node types).
+_target_: knowhyper.ieforge.primehkg_backend.MultiModalFeatureStore
+features_dir:
+  _target_: knowhyper.features.modality_index.resolve_features_dir
+  # HF Hub tag (e.g. "0.12.0", NO "v" prefix) — same convention as
+  # dataset_revision. NOT primehkg_rev ("v0.12.0"), which is the cache-pin
+  # string and does not exist as a Hub tag on primehkg-features.
+  revision: ${knowhyper.dataset_revision}
+modalities_by_type:
+  drug: [smiles, mechanism_of_action, indication, pharmacodynamics, description]
+  protein: [protein, description]
+  # BioRED links disease entities; v0.12.0 features carry disease text
+  # (node_features_text: 44k disease rows, modalities description + definition).
+  disease: [description, definition]

@@ -1,0 +1,79 @@
+# @package knowledge.pipeline.injector.retriever
+# Opt-in caching profile: wraps an inner PrimeHKGRetriever with a JSON cache.
+# To actually populate cache keys, also set the injector's
+# instance_metadata_fields (see configs/knowledge/knowhyper.yaml).
+#
+# The fingerprint is DERIVED from the inner retriever's resolved profile, the
+# pinned rev, concrete dataset fingerprint, cache/semantics versions, and
+# linker_id (not a hand-written string), so editing any identity input
+# automatically changes the fingerprint and forces a cache recompute.
+#
+# DEPENDENCY: this profile interpolates ${knowhyper.primehkg_rev},
+# ${knowledge.dataset}, and ${...linker._target_}, all of which the `knowledge=
+# knowhyper` group provides. Selecting knowhyper_retriever=caching WITHOUT that
+# knowledge group raises an OmegaConf InterpolationKeyError — the caching profile
+# is only meaningful composed with knowledge=knowhyper.
+_target_: knowhyper.cache.caching_retriever.CachingSubHGRetriever
+primehkg_rev: ${knowhyper.primehkg_rev}
+dataset_fingerprint: ${knowhyper.dataset_fingerprint}
+cache_schema_version: ${knowhyper.subhg_cache_schema_version}
+retrieval_semantics_version: ${knowhyper.retrieval_semantics_version}
+# Linker identity folded into the fingerprint: the retrieved sub-hypergraph
+# depends on the seeds the linker produces, so swapping the linker implementation
+# OR its preset must invalidate the cache. The target class alone is not enough —
+# fuzzy (preset=None) and SapBERT-dense (preset.enable_fuzzy=false) share a class
+# but produce different seeds, so include the preset's resolver mode in the id.
+# The injector's mention_type_map ALSO changes the seeds (it biases linking toward
+# a node type), so fold it in too — a typed run must not collide with an untyped
+# cache under the same profile. recall_min_score likewise changes which mentions
+# link (the type-guarded fallback recovers borderline ones), so fold it in as well.
+# `surface` is the QUERY BUILDER's seed generation, not a linker setting, but it
+# belongs here for the same reason the rest do: it changes which mentions reach
+# the linker, hence the seeds, hence the retrieved sub-hypergraph. Without it the
+# BioRED surface-fallback arm resolves to the SAME fingerprint as the id-only arm
+# and silently reads the wrong cache.
+#
+# It reads a `surface_tag` that the arm sets to the literal string `#surface=true`
+# alongside `surface_fallback: true`, rather than interpolating the boolean. Two
+# alternatives were tried and rejected:
+#   * `#surface=${oc.select:...,null}` adds `#surface=None` to EVERY config and
+#     re-fingerprints all 81 arms. The resolver's self-check caught this
+#     immediately -- which is what that self-check is for.
+#   * appending the bare boolean rendered `#strict=TrueTrue`, which reads as a
+#     template bug when diffing linker_ids by hand, and made an explicit
+#     `surface_fallback: false` hash differently from an absent one.
+# With a tag, configs that do not set it render nothing and keep their existing
+# fingerprints, and the one that does is self-describing in the manifest.
+# `tests/ieforge/test_biored_query_builder.py` pins that the tag and the flag are
+# set together, since a tag without the flag would mint a cache for behaviour the
+# run does not have.
+linker_id: ${knowledge.pipeline.injector.linker._target_}#fuzzy=${oc.select:knowledge.pipeline.injector.linker.preset.enable_fuzzy,null}#typemap=${oc.select:knowledge.pipeline.injector.mention_type_map,null}#recall=${oc.select:knowledge.pipeline.injector.linker.recall_min_score,null}#expand=${oc.select:knowledge.pipeline.injector.linker.expansion_fallback,null}#strict=${oc.select:knowledge.pipeline.injector.linker.strict_type_match,null}${oc.select:knowledge.pipeline.query_builder.surface_tag,""}
+inner:
+  _target_: knowhyper.ieforge.primehkg_backend.PrimeHKGRetriever
+  dataset: ${knowledge.dataset}
+  candidate_mode: seed_incident
+  top_k: 64
+  # Cap the k-hop candidate budget at 4x top_k. primehkg's default (500) over-
+  # gathers candidates that its SHA-256-keyed truncation then grinds through
+  # (~7.6s/instance), only to keep the top_k=64 ranked hyperedges. 256 leaves
+  # ample headroom over top_k (so the ranked result is unchanged for any seed
+  # with <=256 candidates — verified identical sub-HGs on ChemProt val) while
+  # cutting retrieval to ~2-3s/instance. Folded into the cache fingerprint.
+  khop_budget: 256
+  # Re-rank semantics for RE relevance. primehkg scores each candidate as
+  # ewo * semantics_mul * size_penalty, so these multipliers reshape the top_k.
+  # Without them, seed_incident floods the sub-HG with the generic high-degree
+  # `anatomy_protein_present` ("protein present in tissue") semantic — ~52% of
+  # edges, irrelevant to a chemical<->protein relation. Suppressing it and boosting
+  # the direct interaction semantics lifts the RE-relevant edge fraction from ~0.21
+  # to ~0.92 on ChemProt validation (>=1 drug_protein edge: 23% -> ~90% of sub-HGs).
+  # Folded into the cache fingerprint, so changing these forces a recompute.
+  semantics_weight:
+    anatomy_protein_present: 0.1
+    drug_protein: 5.0
+    moa_triad: 3.0
+cache:
+  _target_: knowhyper.cache.store.JsonSubHGCache
+  # Shared across local worktrees and ABCI runs for the same remote user.
+  # Run outputs and checkpoints remain separate under paths.output_dir.
+  root: ${knowhyper.storage_root}/cache/subhg/v${knowhyper.subhg_cache_schema_version}

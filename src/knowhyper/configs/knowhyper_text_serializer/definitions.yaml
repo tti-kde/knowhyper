@@ -1,0 +1,27 @@
+# @package knowledge.pipeline.injector.text_serializer
+_target_: knowhyper.pipeline.text_serialization.RetrievedDefinitionsSerializer
+evidence_index:
+  _target_: knowhyper.pipeline.text_serialization.load_definition_evidence_index
+  # This loads raw node_features_text only. Embedding sidecars are never decoded.
+  features_dir:
+    _target_: knowhyper.features.modality_index.resolve_text_features_dir
+    # Pin the immutable snapshot SHA; the human-readable tag has drifted before.
+    revision: ${knowhyper.text_features_commit}
+  modalities: [description, definition]
+  expected_commit: ${knowhyper.text_features_commit}
+  expected_inputs_fingerprint: ${knowhyper.text_features_fingerprint}
+  expected_text_provenance_schema: ${knowhyper.text_features_provenance_schema}
+  expected_provenance_registry_sha256: ${knowhyper.text_features_registry_sha256}
+modalities: [description, definition]
+license_registry:
+  _target_: knowhyper.provenance.text_source_licenses.load_source_license_registry
+  # The packaged registry is reviewed and pinned in the serializer fingerprint.
+  path: null
+  allow_internal: false
+allowed_payload_classes: [semantic_definition]
+audience: publishable
+raw_text_cache_mode: restricted
+cache_root: ${knowhyper.storage_root}/cache/text/retrieved_definitions
+source_revision: ${knowhyper.text_features_revision}@${knowhyper.text_features_commit}
+source_fingerprint: ${knowhyper.text_features_fingerprint}
+required_provenance_schema: linked_mentions_role_v1

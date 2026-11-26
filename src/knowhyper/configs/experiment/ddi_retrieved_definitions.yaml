@@ -1,0 +1,47 @@
+# @package _global_
+defaults:
+  - ddi_baseline
+  - /knowhyper_text_serializer: definitions
+  - override /knowledge: knowhyper
+  - override /knowhyper_retriever: caching
+  - _self_
+
+knowledge:
+  collator:
+    _target_: knowhyper.ieforge.text_collator.PairAwareTextKnowledgeCollator
+    require_prompts: false
+    feature_channels: []
+    max_length: ${task.max_length}
+    max_knowledge_tokens: 128
+    min_source_tokens: 256
+    mode: definitions
+    # BLURB DDI masks the two drug mentions in the source sentence. Reintroducing
+    # them here would create an entity-identity shortcut (issue #115), so the
+    # primary controlled condition uses role tags and redacts every known target
+    # surface/alias from the evidence body as well as omitting the mention prefix.
+    mention_mode: redact
+    redaction_policy: target-surfaces-role-token-v1
+  pipeline:
+    query_builder:
+      _target_: knowhyper.ieforge.pair_query_builder.TargetPairQueryBuilder
+      field: text
+      head_field: head_mention
+      tail_field: tail_mention
+      metadata_fields: [dataset, split, id, head_type, tail_type]
+    injector:
+      encoder: null
+      integrator: null
+      mention_type_map:
+        Drug: drug
+        CHEMICAL: null
+        GENE-Y: null
+        GENE-N: null
+      linker:
+        strict_type_match: true
+      retriever:
+        provenance_schema: linked_mentions_role_v1
+        inner:
+          provenance_schema: linked_mentions_role_v1
+          semantics_weight:
+            drug_drug: 5.0
+            drug_combination: 2.0

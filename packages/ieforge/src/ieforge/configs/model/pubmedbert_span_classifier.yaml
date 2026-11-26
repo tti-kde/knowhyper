@@ -1,0 +1,6 @@
+name: pubmedbert_span
+_target_: ieforge.models.hf_span_classifier.HFSpanClassifier
+model_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+tokenizer_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+max_span_width: 12
+dropout: 0.1

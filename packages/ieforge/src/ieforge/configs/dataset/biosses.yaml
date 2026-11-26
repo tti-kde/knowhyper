@@ -1,0 +1,7 @@
+_target_: ieforge.datasets.blurb_sentence_similarity.BLURBSentenceSimilarityDataset
+task: biosses
+split: train
+name: biosses
+batch_size: 16
+num_workers: 4
+task_family: sentence_similarity

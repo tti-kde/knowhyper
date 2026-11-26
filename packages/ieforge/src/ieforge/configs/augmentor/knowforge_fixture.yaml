@@ -1,0 +1,27 @@
+# @package _global_
+# Deprecated compatibility preset. Prefer `augmentor=knowledge_text_fixture`,
+# which uses native `ieforge.knowledge` and does not require KnowForge.
+# This preset remains optional while KnowForge migration is in progress.
+# Requires `knowforge` installed.
+augmentor:
+  _target_: knowforge.integrations.ieforge.augmentor.KnowForgeAugmentor
+  pipeline:
+    _target_: knowforge.core.pipeline.KnowledgePipeline
+    source:
+      _target_: knowforge.sources.fixture.FixtureCorpusSource
+    builder:
+      _target_: knowforge.builders.corpus_builder.CorpusBuilder
+      embedder:
+        _target_: knowforge.retrievers.embedders.HashingEmbedder
+        dim: 256
+    retriever:
+      _target_: knowforge.retrievers.dense.DenseRetriever
+      embedder:
+        _target_: knowforge.retrievers.embedders.HashingEmbedder
+        dim: 256
+      top_k: 5
+    injector:
+      _target_: knowforge.injectors.text_context.TextContextInjector
+      max_chars: 2000
+    query_builder:
+      _target_: knowforge.integrations.ieforge.query_builders.QAQueryBuilder

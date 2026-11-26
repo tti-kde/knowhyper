@@ -1,0 +1,6 @@
+# @package knowledge.pipeline.injector.retriever
+# Explicit defaults profile: documents the full knob surface.
+_target_: knowhyper.ieforge.primehkg_backend.PrimeHKGRetriever
+dataset: ${knowledge.dataset}
+candidate_mode: seed_incident
+top_k: 64

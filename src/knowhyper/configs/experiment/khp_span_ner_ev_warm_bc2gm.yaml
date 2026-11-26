@@ -1,0 +1,7 @@
+# @package _global_
+defaults:
+  - khp_span_ner_ev_bc2gm
+  - _self_
+
+model:
+  pretrained_encoder_path: ???

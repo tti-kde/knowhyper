@@ -1,0 +1,4 @@
+name: span_bce
+_target_: ieforge.losses.span_bce.SpanBCELoss
+# Span enumeration is ~1 positive per 200 candidates; >1 upweights positives.
+pos_weight: 1.0

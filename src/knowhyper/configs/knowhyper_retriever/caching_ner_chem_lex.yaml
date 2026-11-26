@@ -1,0 +1,63 @@
+# @package knowledge.pipeline.injector.retriever
+# Chemical-NER profile, LEXICAL-first variant. The A/B partner of caching_ner_chem.
+#
+# WHY THIS FILE EXISTS. `caching_ner_chem` keeps `drug_protein: 5.0` -- a value
+# borrowed from `caching.yaml`, the ChemProt profile. Measured on the completed chem
+# strict cache (1,500 test instances, 52,372 non-seed nodes), that borrowing decides
+# what the model actually receives:
+#
+#   node type the model sees      share
+#   protein                       60.4%     <- for "is this span a chemical name?"
+#   drug                          36.5%
+#   disease                        3.0%
+#
+# 60% protein is the ChemProt objective (chemical x protein relation extraction), not
+# the NER one. Two more measurements make this worth an arm rather than a shrug:
+#
+#   * `top_k=64` is BINDING: 57.5% of instances sit exactly at the cap (max observed
+#     64). The budget is rationed, so the weights decide who wins it.
+#   * The lexical material exists and is being outranked: per instance `drug_drug`
+#     edges outnumber `drug_protein` 3.42:1, and `drug_drug` reaches 100% drug nodes.
+#     Demoting drug_protein cannot starve the arm.
+#
+# So this profile inverts the ranking: the seed's lexical neighbourhood first (other
+# drug/chebi names, which is what makes a candidate span look like a chemical), with
+# drug_protein kept as weak biomedical context rather than the dominant signal.
+#
+# NOT a claim that this is better. It is the other half of an A/B: `caching_ner_chem`
+# and this file are both run as arms, and the retrieved-content difference plus the
+# end-task difference are reported together. If the lexical variant wins, the chem
+# profile was mis-borrowed; if it loses, drug_protein was carrying real signal and
+# that is worth knowing too.
+#
+# gene/disease need no counterpart: `caching_ner_gene` already weights
+# `protein_protein` 5.0 and `caching_ner_disease` weights `disease_disease` 5.0 --
+# i.e. their lexical neighbourhood is already first. Chem was the outlier precisely
+# because its lexical neighbour type (drug) and its ChemProt relation partner
+# (protein) are different types.
+#
+# Changing any weight re-fingerprints the cache and forces a fresh precompute.
+defaults:
+  - caching
+  - _self_
+
+inner:
+  semantics_weight:
+    # Lexical neighbourhood FIRST -- both reach drug nodes 100% of the time.
+    drug_drug: 5.0
+    drug_combination: 4.0
+    # Biomedical context, demoted from 5.0. Kept well above the noise floor: a
+    # chemical's protein target is still evidence about the entity, just not the
+    # primary evidence that a token span names a chemical.
+    drug_protein: 1.0
+    moa_triad: 1.0
+    regulation: 0.5
+    # Pharmacological consequence: same suppression as caching_ner_chem. 63% of the
+    # uniform budget went here and none of it is evidence about the span.
+    ae_drug_phenotype: 0.1
+    contraindication: 0.2
+    indication: 0.5
+    off_label_use: 0.2
+    # Tissue-location flood.
+    anatomy_protein_present: 0.1
+    anatomy_protein_absent: 0.1

@@ -1,0 +1,63 @@
+# @package _global_
+# KnowHyper NER with GPU-batched cross-attention knowledge integration.
+# Default dataset: BC5CDR-Chem. Override dataset for other tasks.
+# REQUIRED at runtime: knowledge.pipeline.query_builder.predictions_root=...
+# The directory must contain first-pass {train,validation,test}.jsonl files.
+defaults:
+  # Shared run settings (bs=64, num_workers=4), the same file the RE arms inherit
+  # (#169). FIRST because Hydra requires `override` entries to be last in a defaults
+  # list; `_self_` still comes after, so this config's own blocks continue to win.
+  - _run_defaults
+  - override /task: ner
+  - override /dataset: blurb_ner_bc5cdr_chem
+  - override /loss: token_cross_entropy
+  - override /metric: entity_f1
+  - override /model: knowhyper_token_cross_attention_pubmedbert
+  - override /knowledge: knowhyper_ner
+  - override /knowhyper_encoder: allset
+  # Chemical-NER profile (BC5CDR-Chem). The dataset variants override this:
+  # khp_ner_bc2gm -> caching_ner_gene, khp_ner_bc5cdr_disease -> caching_ner_disease.
+  #
+  # This used to be `caching` (the ChemProt profile) with
+  # `semantics_weight: null` layered on top, i.e. UNIFORM scoring, justified by a
+  # one-line comment and never measured. Uniform is not neutral: the weight is a
+  # MULTIPLIER, so the semantics with the most rows in PrimeKG wins the top_k
+  # budget. Measured on the resulting cache (b6b45dcf4d54dcc4, BC5CDR-Chem test,
+  # 1,500 instances), 52.4% of retrieved hyperedges were `ae_drug_phenotype` and
+  # another 10.9% `contraindication` -- 63% of the budget spent on "what adverse
+  # events does this drug cause", which is not evidence that a span IS a chemical
+  # name. `drug_protein` + `moa_triad` got 11.7%.
+  #
+  # The uniform caches remain on disk for all three splits and are the control for
+  # this profile; see caching_ner_chem.yaml for the full table.
+  - override /knowhyper_retriever: caching_ner_chem
+  - override /knowhyper_integrator: incidence
+  - _self_
+
+# Fusion settings as DEFAULTS, matching what #169 did for the RE arms. The ieforge
+# defaults are gate_init=0.0 / gate_shape=scalar / no fusion_norm, and CLAUDE.md used
+# to require overriding all three on every command.
+#
+# That is backwards for the same reason it was on the RE side: with gate_init=0.0 the
+# fused term is `cls + 0*attn == cls`, so a knowledge arm silently trains as a
+# text-only baseline, completes, and reports a plausible number. An omitted override
+# must not be able to change what a run MEASURES.
+#
+# It matters more here, not less. NER's knowledge path had a documented history of
+# swallowed settings: `TokenCrossAttentionKnowledgeModel` accepted `fusion_norm` and
+# `pretrained_encoder_path` as `**kwargs` and deleted them until 2026-07-19, which
+# invalidated an entire EV warm-start study. The model now rejects unknown kwargs
+# with TypeError, but a defaulted value cannot be forgotten in the first place.
+#
+# Pass `model.gate_init=0.0` (etc.) explicitly for an ablation, and say so when
+# reporting.
+model:
+  gate_init: 1.0
+  gate_shape: vector
+  fusion_norm: true
+
+knowledge:
+  collator:
+    feature_channels:
+      - _target_: knowhyper.ieforge.channels.IncidenceChannel
+      - _target_: knowhyper.ieforge.channels.NERMentionSpanChannel

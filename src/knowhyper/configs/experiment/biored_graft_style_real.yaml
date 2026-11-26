@@ -1,0 +1,61 @@
+# @package _global_
+#
+# GRAFT-style controlled reconstruction on BIORED, `real` arm (#189).
+#
+# NOT a reproduction of official GRAFT. The official system retrieves from a
+# PubMed 23.9M + Wikipedia 29.9M snippet index, decomposes normalized entities into
+# mention instances, and ships its processed datasets encrypted; its BioRED
+# candidate rows (37,286/11,407/11,880) do not match canonical KnowHyper's
+# (22,896/6,659/7,591). So this arm holds the SAME PrimeHKG evidence fixed and
+# reconstructs GRAFT's *architecture* -- parallel text encoding of retrieved
+# evidence plus a learned gate. Always written `GRAFT-style`, never `GRAFT`;
+# official reported scores belong in a separate table.
+#
+# Inherits re_serialized_subhg, so the query builder, linker, retriever profile and
+# -- critically -- the top-3 score-ranked hyperedge SELECTION are byte-identical to
+# the R2b arm. Only the injection mechanism differs: R2b concatenates the serialized
+# blocks into sequence B of one 512-token input; this arm encodes them with a second
+# encoder and mixes source-only against retrieval-conditioned logits.
+#
+# BioRED inherits the SURFACE-fallback R2b arm, not the id-only one. The matched
+# graph arm (`khp_biored_xattn_surface_top3`) cannot run on the id-only cache --
+# 46.2% of those sub-HGs are empty and `require_knowledge: true` aborts in
+# validation_step -- so an id-only text arm here would make `edge_top3 - graft_real`
+# a linking contrast wearing a representation contrast's name.
+defaults:
+  - biored_serialized_subhg_surface
+  - _self_
+
+# Replace the plain HFSequenceClassifier with the two-encoder gated wrapper, reusing
+# the same PubMedBERT checkpoint for BOTH encoders (`evidence_model_name` is left
+# unset so it is read from the inner model's own config -- a backbone swap then
+# cannot leave the evidence encoder on the old checkpoint).
+model:
+  _target_: knowhyper.ieforge.models.ParallelTextGatedKnowledgeModel
+  _recursive_: false
+  name: knowhyper_parallel_text_gated
+  tokenizer_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+  hidden_size: 768
+  num_heads: 8
+  # Starts at sigmoid(0)=0.5, an even mix. Unlike the fusion model's `gate_init`,
+  # there is no value here that silently disables the evidence branch --
+  # `knowledge_evidence_present=false` is the only path to g=0.
+  gate_bias_init: 0.0
+  fusion_norm: true
+  inner:
+    _target_: ieforge.models.hf_sequence_classifier.HFSequenceClassifier
+    model_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+    name: pubmedbert_seq
+
+knowledge:
+  collator:
+    # A DIFFERENT collator, not a mode of the R2b one: that collator rebuilds
+    # source+knowledge into a single sequence and cannot emit an independent
+    # evidence tensor for a second encoder.
+    _target_: knowhyper.ieforge.parallel_text_collator.ParallelEvidenceKnowledgeCollator
+    evidence_mode: real
+    # Special tokens included. The SOURCE keeps its own full ${task.max_length}
+    # budget -- unlike R2b, no evidence tokens are taken out of it, which is why
+    # `real - masked` carries no source-truncation difference.
+    max_evidence_tokens: 128
+    payload: serialized

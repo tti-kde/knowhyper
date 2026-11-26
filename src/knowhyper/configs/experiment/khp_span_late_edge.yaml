@@ -1,0 +1,71 @@
+# @package _global_
+# #231 Variant 1: baseline-preserving late-logit span verifier.
+#
+# Identical to `khp_span_ner_edge` except the model: same dataset,
+# retriever profile, loss, metric, batch size and candidate lattice, so the only
+# difference from the #218 arm is the injection site. Keeping the retriever line
+# inherited matters -- it is dataset-specific and selecting the wrong profile
+# composes cleanly while retrieving the wrong graph.
+# Phase-2 candidate-specific structure arm for #180/#202.
+#
+# Requires OOF span candidates for train and full-train span candidates for
+# validation/test. It is implemented now but must not be promoted into the
+# experiment matrix until the matched span-only baseline passes #202 Phase 1.
+defaults:
+  - _run_defaults
+  - override /task: span_ner
+  - override /dataset: blurb_ner_bc5cdr_chem
+  - override /loss: focal
+  - override /metric: entity_f1
+  - override /model: knowhyper_span_late_logit_pubmedbert
+  - override /knowledge: knowhyper_ner
+  - override /knowhyper_encoder: allset
+  - override /knowhyper_retriever: caching_ner_chem
+  - override /knowhyper_integrator: incidence
+  - _self_
+
+dataset:
+  # bs=16, NOT the 64 inherited from `_run_defaults`. That file's own header says
+  # "Shared run settings for every RE experiment" -- 64 was measured for relation
+  # extraction, and ieforge's `blurb_ner_*` datasets default to 16, which is what the
+  # #202 span baseline ran at (`docs/reports/data/ner_span019/aggregate.txt`: bs=16).
+  #
+  # MEASURED COST of the 64 inheritance (#218 Phase 2, BC5CDR-Chem, n=3, against #202's
+  # n=10 baseline of 0.9247): every arm landed 0.025-0.130 BELOW baseline with seed sd
+  # 3.6-11.5x #202's. The controls fell further than the real arm, manufacturing
+  # `biolinkbert real - zero = +0.076` -- which reads as a large knowledge effect and is
+  # the control collapsing. Found via #220's content-matched sham (payload -> [MASK]
+  # moved test by +-0.003 while base differed by 0.21) plus #202's absolute record;
+  # neither alone would have shown it. Invisible in val: pubmedbert/chem/base was
+  # val 0.9244 vs #202's 0.9247, and test 0.8968.
+  #
+  # `_run_defaults` is deliberately NOT edited: 64 remains correct for RE.
+  batch_size: 16
+
+task:
+  max_span_width: 12
+  threshold: 0.5
+  decoder: max_total_score
+
+model:
+  # No gate/fusion knobs: the late head has no gate, so `SpanLateLogitKnowledgeModel`
+  # does not accept them. Carrying them over from the #218 arm would either fail at
+  # instantiate or -- worse, if the class grew **kwargs -- accept a sweep that changes
+  # nothing. The compose gate asserts they are absent.
+  knowledge_control: real
+  freeze_inner: true
+
+knowledge:
+  pipeline:
+    query_builder:
+      mention_source: candidates
+    injector:
+      mention_provenance_schema: linked_mentions_v1
+      linker:
+        strict_type_match: true
+      retriever:
+        provenance_schema: linked_mentions_v1
+  collator:
+    feature_channels:
+      - _target_: knowhyper.ieforge.channels.IncidenceChannel
+      - _target_: knowhyper.ieforge.channels.NERMentionSpanChannel

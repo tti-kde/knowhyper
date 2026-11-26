@@ -1,0 +1,3 @@
+_target_: ieforge.tasks.sentence_similarity.SentenceSimilarityTask
+name: sentence_similarity
+max_length: 512

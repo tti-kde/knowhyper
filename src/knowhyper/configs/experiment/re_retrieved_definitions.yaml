@@ -1,0 +1,33 @@
+# @package _global_
+defaults:
+  - re_baseline
+  - /knowhyper_text_serializer: definitions
+  - override /knowledge: knowhyper
+  - override /knowhyper_retriever: caching
+  - _self_
+
+knowledge:
+  collator:
+    _target_: knowhyper.ieforge.text_collator.PairAwareTextKnowledgeCollator
+    require_prompts: false
+    feature_channels: []
+    max_length: ${task.max_length}
+    max_knowledge_tokens: 128
+    min_source_tokens: 256
+    mode: definitions
+  pipeline:
+    query_builder:
+      _target_: knowhyper.ieforge.pair_query_builder.TargetPairQueryBuilder
+      field: text
+      head_field: head_mention
+      tail_field: tail_mention
+      metadata_fields: [dataset, split, id, head_type, tail_type]
+    injector:
+      encoder: null
+      integrator: null
+      linker:
+        strict_type_match: true
+      retriever:
+        provenance_schema: linked_mentions_role_v1
+        inner:
+          provenance_schema: linked_mentions_role_v1

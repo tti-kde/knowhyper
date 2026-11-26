@@ -1,0 +1,19 @@
+# @package _global_
+# BC2GM gene NER with entity_view knowledge integration.
+defaults:
+  - khp_ner_ev
+  - override /dataset: blurb_ner_bc2gm
+  # MUST match khp_ner_bc2gm. Inheriting khp_ner_ev alone silently keeps the
+  # CHEMICAL profile, which is the BioRED bug in miniature: the fusion arm and the
+  # EV arm of the same dataset would retrieve different graphs, and it composes
+  # cleanly so nothing complains. Pinned by
+  # tests/ieforge/test_retriever_semantics_parity.py.
+  - override /knowhyper_retriever: caching_ner_gene
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Chemical: null
+        Gene: protein

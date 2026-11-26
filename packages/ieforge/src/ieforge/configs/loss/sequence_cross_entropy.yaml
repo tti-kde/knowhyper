@@ -1,0 +1,2 @@
+_target_: ieforge.losses.token_cross_entropy.TokenCrossEntropyLoss
+name: sequence_cross_entropy

@@ -1,0 +1,225 @@
+schema: text_provenance_registry_v1
+entries:
+  # Pin: mondo.obo definitions (data-version + local mtime retrieved_at)
+  - source: MONDO
+    source_field: definition
+    upstream_source: MONDO
+    upstream_release: releases/2026-05-05
+    retrieved_at: "2026-06-01"
+    source_url: https://mondo.monarchinitiative.org/
+    license_id: CC-BY-4.0
+    license_url: https://creativecommons.org/licenses/by/4.0/
+    usage_scope: allow
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-22"
+    attribution_text: "MONDO releases/2026-05-05 (CC-BY-4.0). See https://mondo.monarchinitiative.org/"
+  # PENDING: mondo_map.tsv names come from PrimeKG disease_features, not mondo.obo
+  - source: MONDO
+    source_field: mondo_name
+    upstream_source: MONDO
+    upstream_release: PENDING
+    retrieved_at: PENDING
+    source_url: https://mondo.monarchinitiative.org/
+    license_id: CC-BY-4.0
+    license_url: https://creativecommons.org/licenses/by/4.0/
+    usage_scope: review_required
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-22"
+    attribution_text: "MONDO (release PENDING; CC-BY-4.0). See https://mondo.monarchinitiative.org/"
+  # Pin: go_map.tsv definitions parsed from co-located go-basic.obo (data-version)
+  - source: GO
+    source_field: definition
+    upstream_source: Gene Ontology
+    upstream_release: releases/2026-03-25
+    retrieved_at: "2026-05-23"
+    source_url: http://geneontology.org/
+    license_id: CC-BY-4.0
+    license_url: https://creativecommons.org/licenses/by/4.0/
+    usage_scope: allow
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-22"
+    attribution_text: "Gene Ontology releases/2026-03-25 (CC-BY-4.0). See http://geneontology.org/"
+  # Pin: ChEBI Ontology release-253 (chebi_definitions_meta.json; Task 8 re-fetch)
+  - source: chebi
+    source_field: definition
+    upstream_source: ChEBI
+    upstream_release: chebi:253
+    retrieved_at: "2026-07-22"
+    source_url: https://www.ebi.ac.uk/chebi/
+    license_id: CC-BY-4.0
+    license_url: https://creativecommons.org/licenses/by/4.0/
+    usage_scope: allow
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-22"
+    attribution_text: "ChEBI chebi:253 (CC-BY-4.0). See https://www.ebi.ac.uk/chebi/"
+  # Pin: hpo_map.tsv definitions parsed from co-located hpo.obo (owl:versionInfo 2026-02-16)
+  - source: HPO
+    source_field: definition
+    upstream_source: HPO
+    upstream_release: "2026-02-16"
+    retrieved_at: "2026-05-23"
+    source_url: https://hpo.jax.org/
+    license_id: CC-BY-4.0
+    license_url: https://creativecommons.org/licenses/by/4.0/
+    usage_scope: allow
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-22"
+    attribution_text: "HPO 2026-02-16 (CC-BY-4.0). See https://hpo.jax.org/"
+  # PENDING: hp_label is PrimeKG node label copy; not proven equal to the OBO release above
+  - source: HPO
+    source_field: hp_label
+    upstream_source: HPO
+    upstream_release: PENDING
+    retrieved_at: PENDING
+    source_url: https://hpo.jax.org/
+    license_id: CC-BY-4.0
+    license_url: https://creativecommons.org/licenses/by/4.0/
+    usage_scope: review_required
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-22"
+    attribution_text: "HPO (release PENDING; CC-BY-4.0). See https://hpo.jax.org/"
+  # PENDING: hgnc.tsv / hgnc.json have no snapshot release id in-artifact
+  - source: HGNC
+    source_field: name
+    upstream_source: HGNC
+    upstream_release: PENDING
+    retrieved_at: PENDING
+    source_url: https://www.genenames.org/
+    license_id: CC0-1.0
+    license_url: https://creativecommons.org/publicdomain/zero/1.0/
+    usage_scope: review_required
+    redistribution_scope: unrestricted
+    reviewed_at: "2026-07-22"
+  # PENDING: hgnc.tsv / hgnc.json have no snapshot release id in-artifact
+  - source: HGNC
+    source_field: symbol
+    upstream_source: HGNC
+    upstream_release: PENDING
+    retrieved_at: PENDING
+    source_url: https://www.genenames.org/
+    license_id: CC0-1.0
+    license_url: https://creativecommons.org/publicdomain/zero/1.0/
+    usage_scope: review_required
+    redistribution_scope: unrestricted
+    reviewed_at: "2026-07-22"
+  # PENDING: uniprot TSV export has no release id in-artifact
+  - source: UniProt
+    source_field: Protein names
+    upstream_source: UniProt
+    upstream_release: PENDING
+    retrieved_at: PENDING
+    source_url: https://www.uniprot.org/
+    license_id: CC-BY-4.0
+    license_url: https://creativecommons.org/licenses/by/4.0/
+    usage_scope: review_required
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-22"
+    attribution_text: "UniProt (release PENDING; CC-BY-4.0). See https://www.uniprot.org/"
+  # PENDING: uniprot TSV export has no release id in-artifact
+  - source: UniProt
+    source_field: Gene Names
+    upstream_source: UniProt
+    upstream_release: PENDING
+    retrieved_at: PENDING
+    source_url: https://www.uniprot.org/
+    license_id: CC-BY-4.0
+    license_url: https://creativecommons.org/licenses/by/4.0/
+    usage_scope: review_required
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-22"
+    attribution_text: "UniProt (release PENDING; CC-BY-4.0). See https://www.uniprot.org/"
+  # PENDING: uniprot TSV export has no release id in-artifact
+  - source: UniProt
+    source_field: Entry
+    upstream_source: UniProt
+    upstream_release: PENDING
+    retrieved_at: PENDING
+    source_url: https://www.uniprot.org/
+    license_id: CC-BY-4.0
+    license_url: https://creativecommons.org/licenses/by/4.0/
+    usage_scope: review_required
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-22"
+    attribution_text: "UniProt (release PENDING; CC-BY-4.0). See https://www.uniprot.org/"
+  # Pin: UniProt reviewed-human TSV Function column (x-uniprot-release 2026_02)
+  - source: UniProt
+    source_field: Function
+    upstream_source: UniProt
+    upstream_release: "2026_02"
+    retrieved_at: "2026-07-22"
+    source_url: https://www.uniprot.org/
+    license_id: CC-BY-4.0
+    license_url: https://creativecommons.org/licenses/by/4.0/
+    usage_scope: allow
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-22"
+    attribution_text: "UniProt 2026_02 (CC-BY-4.0). See https://www.uniprot.org/"
+  # Pin: PrimeKG drug description → DrugBank 5.1.8 (published PrimeKG pin); internal_only
+  - source: PrimeKG
+    source_field: description
+    upstream_source: DrugBank
+    upstream_release: "5.1.8"
+    retrieved_at: "2026-04-27"
+    source_url: https://go.drugbank.com/
+    license_id: DrugBank-non-commercial
+    license_url: https://go.drugbank.com/releases/latest
+    usage_scope: internal_only
+    redistribution_scope: restricted
+    reviewed_at: "2026-07-22"
+    provenance_chain:
+      - source: PrimeKG
+      - source: DrugBank
+        release: "5.1.8"
+        field: description
+  # pathway_map.tsv description is PrimeKG nodes.tab name copy (not Reactome exporter text)
+  - source: pathway
+    source_field: description
+    upstream_source: PrimeKG
+    upstream_release: PENDING
+    retrieved_at: PENDING
+    source_url: https://github.com/mims-harvard/PrimeKG
+    license_id: PrimeKG-dataset
+    license_url: https://github.com/mims-harvard/PrimeKG
+    usage_scope: review_required
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-22"
+    attribution_text: "PrimeKG (release PENDING; PrimeKG-dataset). See https://github.com/mims-harvard/PrimeKG"
+  # anatomy_map.tsv description is PrimeKG nodes.tab name copy (not UBERON)
+  - source: anatomy
+    source_field: description
+    upstream_source: PrimeKG
+    upstream_release: PENDING
+    retrieved_at: PENDING
+    source_url: https://github.com/mims-harvard/PrimeKG
+    license_id: PrimeKG-dataset
+    license_url: https://github.com/mims-harvard/PrimeKG
+    usage_scope: review_required
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-22"
+    attribution_text: "PrimeKG (release PENDING; PrimeKG-dataset). See https://github.com/mims-harvard/PrimeKG"
+  # exposure_map.tsv description is PrimeKG nodes.tab name copy (not CTD)
+  - source: exposure
+    source_field: description
+    upstream_source: PrimeKG
+    upstream_release: PENDING
+    retrieved_at: PENDING
+    source_url: https://github.com/mims-harvard/PrimeKG
+    license_id: PrimeKG-dataset
+    license_url: https://github.com/mims-harvard/PrimeKG
+    usage_scope: review_required
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-22"
+    attribution_text: "PrimeKG (release PENDING; PrimeKG-dataset). See https://github.com/mims-harvard/PrimeKG"
+  # nodes.synonyms concatenated into synonym_context (features 0.12.14+)
+  - source: primehkg-core
+    source_field: synonyms
+    upstream_source: primehkg-core
+    upstream_release: PENDING
+    retrieved_at: PENDING
+    source_url: https://github.com/nishide-dev/primehkg
+    license_id: PrimeHKG-derived
+    license_url: https://github.com/nishide-dev/primehkg
+    usage_scope: review_required
+    redistribution_scope: attribution_required
+    reviewed_at: "2026-07-28"
+    attribution_text: "PrimeHKG core nodes.synonyms (concat K=16 synonym_context). See https://github.com/nishide-dev/primehkg"

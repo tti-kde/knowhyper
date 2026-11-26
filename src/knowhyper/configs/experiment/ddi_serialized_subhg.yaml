@@ -1,0 +1,24 @@
+# @package _global_
+#
+# R2b / C2: the retrieved typed sub-hypergraph serialized as canonical text.
+#
+# Inherits ddi_retrieved_definitions so the query builder, linker, retriever
+# profile and token budget are byte-identical to the R2a arm; the only difference
+# is WHAT gets written into sequence B. That keeps "structure as text" vs
+# "definitions as text" a single-variable contrast.
+#
+# The serializer needs no license registry: semantics / member roles / CTD
+# polarity are structural fields on HyperedgeRef, not licensed text payloads.
+defaults:
+  - ddi_retrieved_definitions
+  - override /knowhyper_text_serializer: serialized_subhg
+  - _self_
+
+knowledge:
+  collator:
+    mode: serialized
+    payload: serialized
+    # The serializer already emits complete "[HG] ... [/HG]" strings including
+    # role tokens for target endpoints, so the mention/redaction policies that
+    # R2a needs must not run again over this payload.
+    mention_mode: omit

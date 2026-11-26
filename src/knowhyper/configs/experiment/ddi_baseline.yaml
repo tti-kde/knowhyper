@@ -1,0 +1,32 @@
+# @package _global_
+# Knowledge-OFF baseline for the DDI (drug-drug interaction) RE comparison:
+# identical task/loss/metric and the SAME PubMedBERT backbone as khp_ddi, with NO
+# knowledge — so any relation_f1 delta is attributable to knowledge integration.
+# Backbone id comes from the `backbone` group (default pubmedbert). DDI's label
+# set is DDI-mechanism/effect/advise/int + DDI-false (negative), which differs
+# from chemprot's "false", so task + metric negative_label are overridden.
+defaults:
+  # Shared mandatory run settings (batch_size/num_workers). FIRST because Hydra
+  # requires `override` entries to be last in a defaults list; `_self_` still
+  # comes after, so this config's own blocks continue to win.
+  - _run_defaults
+  - /backbone: pubmedbert
+  - override /task: re_blurb
+  - override /dataset: ddi
+  - override /loss: sequence_cross_entropy
+  - override /metric: relation_f1
+  - _self_
+
+model:
+  _target_: ieforge.models.hf_sequence_classifier.HFSequenceClassifier
+  name: pubmedbert_seq
+
+task:
+  context_strategy: full_text
+  window_sentences: 0
+  # DDI negative label (re_blurb defaults to chemprot's "false", absent from the
+  # DDI label set — RETask raises if negative_label is not in label_list).
+  negative_label: "DDI-false"
+
+metric:
+  negative_label: "DDI-false"

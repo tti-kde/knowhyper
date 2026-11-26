@@ -1,0 +1,7 @@
+# @package _global_
+# Knowledge-OFF NER baseline for NCBI-Disease (disease NER).
+# Backbone comes from the `backbone` group, so this one config covers all four.
+defaults:
+  - ner_baseline
+  - override /dataset: blurb_ner_ncbi_disease
+  - _self_

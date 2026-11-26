@@ -1,0 +1,66 @@
+# @package knowledge.pipeline.injector.retriever
+# Chemical-NER retrieval profile (BC5CDR-Chem).
+#
+# WHY THIS FILE EXISTS. `khp_ner.yaml` set `semantics_weight: null` with the
+# comment "NER retrieves entity-centric sub-HGs; use primehkg's default uniform
+# scoring". That was never measured, and uniform is not neutral: `semantics_weight`
+# is a MULTIPLIER, so with no weights the semantics that simply have the most rows
+# in PrimeKG win the top_k budget. Measured on the completed uniform cache
+# (b6b45dcf4d54dcc4, BC5CDR-Chem test, 1,500 instances, 35.5 hyperedges/instance,
+# seed node type = drug 100%), counting which node types each semantics attaches to
+# the seed:
+#
+#   semantics             total   ->target types            share
+#   ae_drug_phenotype     28,320  100% effect/phenotype     52.4%   <- dominates
+#   drug_drug             13,238  100% drug                 18.5%
+#   contraindication       5,768  100% disease              10.9%
+#   drug_protein           3,470  100% protein               7.5%
+#   moa_triad              3,230  50% protein / 50% disease  4.2%
+#   drug_combination       1,891  100% drug                  4.0%
+#   regulation               847  100% protein               1.9%
+#
+# So under uniform scoring **63% of the retrieved budget is ae_drug_phenotype +
+# contraindication** -- "what adverse events / contraindications does this drug
+# have". That is pharmacological consequence, not evidence that a token span IS a
+# chemical name. The two semantics the ChemProt profile actually weights
+# (drug_protein 5.0, moa_triad 3.0) together account for only 11.7%.
+#
+# WHAT THIS PROFILE OPTIMISES FOR. NER asks "is this span a chemical, and where
+# does it end". The useful graph signal is the seed's *lexical neighbourhood*:
+# other drug nodes (drug_drug / drug_combination reach 100% drug nodes) put the
+# candidate among chemical-like entities, and drug_protein / moa_triad / regulation
+# supply the biomedical context that distinguishes a drug mention from a same-
+# spelled non-drug. Phenotype and disease consequence are demoted, not deleted --
+# `moa_triad` still carries disease and stays weighted, so a genuinely informative
+# triad survives.
+#
+# This is a hypothesis with a measured motivation, not a tuned optimum. It has NOT
+# been shown to improve end-task F1; the honest control is the uniform cache above,
+# which already exists for all three splits, so the contrast is cheap to run.
+#
+# Changing any weight here changes the cache fingerprint and forces a recompute.
+defaults:
+  - caching
+  - _self_
+
+inner:
+  semantics_weight:
+    # Demote pharmacological consequence: 63% of the uniform budget, and none of it
+    # is evidence about the SPAN. Keep >0 so an instance whose only edges are these
+    # still retrieves something rather than going empty.
+    ae_drug_phenotype: 0.1
+    contraindication: 0.2
+    indication: 0.5
+    off_label_use: 0.2
+    # Lexical neighbourhood: these reach other drug nodes 100% of the time.
+    drug_drug: 4.0
+    drug_combination: 3.0
+    # Biomedical context for a chemical mention (kept at the ChemProt values --
+    # ChemProt is also chemical-centric, so borrowing here is principled).
+    drug_protein: 5.0
+    moa_triad: 3.0
+    regulation: 3.0
+    # Tissue-location noise floods protein-adjacent seeds (same rationale as
+    # caching_biored.yaml).
+    anatomy_protein_present: 0.1
+    anatomy_protein_absent: 0.1

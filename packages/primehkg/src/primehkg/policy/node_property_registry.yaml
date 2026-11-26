@@ -1,0 +1,391 @@
+version: 9
+properties:
+  - property_id: molecular_weight
+    display_name: Molecular weight
+    dtype: float
+    unit: g/mol
+    node_types: [drug]
+    sources:
+      - kind: primekg_tab
+        tab: drug_features
+        column: molecular_weight
+      - kind: chembl_tsv
+        column: molecular_weight
+      - kind: drugbank_tsv
+        column: molecular_weight
+
+  - property_id: tpsa
+    display_name: Topological polar surface area
+    dtype: float
+    unit: null
+    node_types: [drug]
+    sources:
+      - kind: primekg_tab
+        tab: drug_features
+        column: tpsa
+      - kind: drugbank_tsv
+        column: tpsa
+
+  - property_id: alogp
+    display_name: Calculated logP
+    dtype: float
+    unit: null
+    node_types: [drug]
+    sources:
+      - kind: primekg_tab
+        tab: drug_features
+        column: clogp
+      - kind: chembl_tsv
+        column: alogp
+      - kind: drugbank_tsv
+        column: alogp
+
+  - property_id: psa
+    display_name: Polar surface area
+    dtype: float
+    unit: null
+    node_types: [drug]
+    sources:
+      - kind: chembl_tsv
+        column: psa
+      - kind: drugbank_tsv
+        column: psa
+
+  - property_id: hba
+    display_name: Hydrogen bond acceptors
+    dtype: int
+    unit: null
+    node_types: [drug]
+    sources:
+      - kind: chembl_tsv
+        column: hba
+      - kind: drugbank_tsv
+        column: hba
+
+  - property_id: hbd
+    display_name: Hydrogen bond donors
+    dtype: int
+    unit: null
+    node_types: [drug]
+    sources:
+      - kind: chembl_tsv
+        column: hbd
+      - kind: drugbank_tsv
+        column: hbd
+
+  - property_id: umls_description
+    display_name: UMLS description
+    dtype: string
+    unit: null
+    node_types: [disease]
+    sources:
+      - kind: primekg_tab
+        tab: disease_features
+        column: umls_description
+
+  - property_id: orphanet_definition
+    display_name: Orphanet definition
+    dtype: string
+    unit: null
+    node_types: [disease]
+    sources:
+      - kind: primekg_tab
+        tab: disease_features
+        column: orphanet_definition
+
+  - property_id: orphanet_prevalence
+    display_name: Orphanet prevalence class
+    dtype: string
+    unit: null
+    node_types: [disease]
+    sources:
+      - kind: primekg_tab
+        tab: disease_features
+        column: orphanet_prevalence
+
+  - property_id: orphanet_epidemiology
+    display_name: Orphanet epidemiology
+    dtype: string
+    unit: null
+    node_types: [disease]
+    sources:
+      - kind: primekg_tab
+        tab: disease_features
+        column: orphanet_epidemiology
+
+  - property_id: orphanet_clinical_description
+    display_name: Orphanet clinical description
+    dtype: string
+    unit: null
+    node_types: [disease]
+    sources:
+      - kind: primekg_tab
+        tab: disease_features
+        column: orphanet_clinical_description
+
+  - property_id: orphanet_management_and_treatment
+    display_name: Orphanet management and treatment
+    dtype: string
+    unit: null
+    node_types: [disease]
+    sources:
+      - kind: primekg_tab
+        tab: disease_features
+        column: orphanet_management_and_treatment
+
+  - property_id: mayo_symptoms
+    display_name: Mayo Clinic symptoms summary
+    dtype: string
+    unit: null
+    node_types: [disease]
+    sources:
+      - kind: primekg_tab
+        tab: disease_features
+        column: mayo_symptoms
+
+  - property_id: mayo_causes
+    display_name: Mayo Clinic causes summary
+    dtype: string
+    unit: null
+    node_types: [disease]
+    sources:
+      - kind: primekg_tab
+        tab: disease_features
+        column: mayo_causes
+
+  - property_id: mayo_risk_factors
+    display_name: Mayo Clinic risk factors summary
+    dtype: string
+    unit: null
+    node_types: [disease]
+    sources:
+      - kind: primekg_tab
+        tab: disease_features
+        column: mayo_risk_factors
+
+  - property_id: mayo_complications
+    display_name: Mayo Clinic complications summary
+    dtype: string
+    unit: null
+    node_types: [disease]
+    sources:
+      - kind: primekg_tab
+        tab: disease_features
+        column: mayo_complications
+
+  - property_id: mayo_prevention
+    display_name: Mayo Clinic prevention summary
+    dtype: string
+    unit: null
+    node_types: [disease]
+    sources:
+      - kind: primekg_tab
+        tab: disease_features
+        column: mayo_prevention
+
+  - property_id: mayo_see_doc
+    display_name: Mayo Clinic when to see a doctor
+    dtype: string
+    unit: null
+    node_types: [disease]
+    sources:
+      - kind: primekg_tab
+        tab: disease_features
+        column: mayo_see_doc
+
+  - property_id: sequence_length
+    display_name: Sequence length
+    dtype: int
+    unit: aa
+    node_types: [protein]
+    sources:
+      - kind: uniprot_tsv
+        column: Length
+
+  - property_id: protein_mass
+    display_name: Protein mass
+    dtype: float
+    unit: Da
+    node_types: [protein]
+    sources:
+      - kind: uniprot_tsv
+        column: Mass
+
+  - property_id: synonym_count
+    display_name: HPO synonym count
+    dtype: int
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: synonym_count
+
+  - property_id: parent_count
+    display_name: HPO parent count
+    dtype: int
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: parent_count
+
+  - property_id: xref_count
+    display_name: HPO xref count
+    dtype: int
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: xref_count
+
+  - property_id: is_obsolete
+    display_name: HPO term obsolete flag
+    dtype: int
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: is_obsolete
+
+  - property_id: hpoa_annotation_count
+    display_name: HPOA annotation count
+    dtype: int
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: hpoa_annotation_count
+
+  - property_id: hpoa_disease_count
+    display_name: HPOA disease count
+    dtype: int
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: hpoa_disease_count
+
+  - property_id: hpoa_frequency_row_count
+    display_name: HPOA frequency row count
+    dtype: int
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: hpoa_frequency_row_count
+
+  - property_id: hpoa_cohort_fraction_mean
+    display_name: HPOA cohort fraction mean
+    dtype: float
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: hpoa_cohort_fraction_mean
+
+  - property_id: hpoa_negative_annotation_count
+    display_name: HPOA negative annotation count
+    dtype: int
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: hpoa_negative_annotation_count
+
+  - property_id: hpoa_frequency_hp_term_count
+    display_name: HPOA HP frequency term count
+    dtype: int
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: hpoa_frequency_hp_term_count
+
+  - property_id: hpoa_frequency_ordinal_mode
+    display_name: HPOA frequency ordinal mode
+    dtype: int
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: hpoa_frequency_ordinal_mode
+
+  - property_id: hpoa_primekg_disease_count
+    display_name: HPOA PrimeKG disease count
+    dtype: int
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: hpoa_primekg_disease_count
+
+  - property_id: ontology_depth
+    display_name: HPO ontology depth
+    dtype: int
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: ontology_depth
+
+  - property_id: descendant_count
+    display_name: HPO descendant count
+    dtype: int
+    unit: null
+    node_types: [effect/phenotype]
+    sources:
+      - kind: hpo_tsv
+        column: descendant_count
+
+  - property_id: variant_type
+    display_name: Variant type (ClinVar)
+    dtype: int
+    unit: null
+    node_types: [variant]
+    categories:
+      - single nucleotide variant
+      - Deletion
+      - Duplication
+      - Microsatellite
+      - Insertion
+      - Indel
+      - copy number loss
+      - Inversion
+      - copy number gain
+      - Variation
+      - Translocation
+      - Complex
+    sources:
+      - kind: core_nodes_meta
+        meta_key: clinvar_variant
+        field: type
+
+  - property_id: variant_chromosome
+    display_name: Variant chromosome (ordinal)
+    dtype: int
+    unit: null
+    node_types: [variant]
+    sources:
+      - kind: core_nodes_meta
+        meta_key: clinvar_variant
+        field: chromosome
+
+  - property_id: variant_start
+    display_name: Variant start (GRCh38)
+    dtype: int
+    unit: bp
+    node_types: [variant]
+    sources:
+      - kind: core_nodes_meta
+        meta_key: clinvar_variant
+        field: start
+
+  - property_id: variant_stop
+    display_name: Variant stop (GRCh38)
+    dtype: int
+    unit: bp
+    node_types: [variant]
+    sources:
+      - kind: core_nodes_meta
+        meta_key: clinvar_variant
+        field: stop

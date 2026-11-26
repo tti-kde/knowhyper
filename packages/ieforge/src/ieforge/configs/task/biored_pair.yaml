@@ -1,0 +1,3 @@
+_target_: ieforge.tasks.biored.BioREDPairTask
+name: biored_pair
+max_length: 512

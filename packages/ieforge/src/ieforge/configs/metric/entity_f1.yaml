@@ -1,0 +1,6 @@
+name: entity_f1
+_target_: ieforge.metrics.entity_f1.EntityF1
+average: micro
+monitor: val/f1
+monitor_mode: max
+monitor_label: f1

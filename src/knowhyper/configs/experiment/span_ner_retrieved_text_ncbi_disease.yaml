@@ -1,0 +1,12 @@
+# @package _global_
+defaults:
+  - span_ner_retrieved_text
+  - override /dataset: blurb_ner_ncbi_disease
+  - override /knowhyper_retriever: caching_ner_disease
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Disease: disease

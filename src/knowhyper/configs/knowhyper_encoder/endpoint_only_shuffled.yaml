@@ -1,0 +1,27 @@
+# @package knowledge.pipeline.injector.encoder
+# Type- and coverage-matched shuffle of the endpoint arm.
+#
+# Each seed's vector is replaced by that of a DIFFERENT entity of the SAME node
+# type, drawn deterministically from the seeds observed in the train split. Only
+# identity is destroyed: type and coverage are held fixed by construction.
+#
+# Why not `model.knowledge_control=shuffled`: that rolls the knowledge batch by
+# one, it exists only on TokenCrossAttentionKnowledgeModel (the NER model, not
+# the RE model this arm uses), and a roll is not matched -- it can hand a
+# drug--drug instance a pathway vector, confounding wrong-identity with
+# wrong-type. DDI's own seeds span 11 node types, so that is a live risk.
+#
+# `dataset` is set by the per-dataset experiment config, not here: it must be the
+# dataset NAME, and `${knowledge.dataset}` resolves to a CoreDataset object. The
+# SubHG cache fingerprint is supplied at runtime by the retriever (see
+# EndpointOnlyEncoder.bind_pool) because it is derived, not configurable.
+_target_: knowhyper.encoders.endpoint_only.build_endpoint_encoder
+hidden_size: 768
+shuffled: true
+# ALL splits, not just train. A seed absent from the pool falls back to itself,
+# so a train-only pool would leave validation- and test-only entities unshuffled
+# -- weakening the control precisely on the split the headline number comes from.
+# The pool holds entity ids only, never labels, so this is not leakage: the
+# shuffled arm is defined by seeing the WRONG entity, and which wrong entity it
+# sees carries no information about the instance.
+pool_split: train,validation,test

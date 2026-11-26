@@ -1,0 +1,18 @@
+_target_: ieforge.tasks.bioredirect.BioREDirectPairTask
+name: bioredirect_pair
+relation_labels:
+  - "None"
+  - "Association"
+  - "Bind"
+  - "Comparison"
+  - "Conversion"
+  - "Cotreatment"
+  - "Drug_Interaction"
+  - "Negative_Correlation"
+  - "Positive_Correlation"
+novelty_labels:
+  - "None"
+  - "Novel"
+  - "No"
+negative_label: "None"
+max_length: 512

@@ -1,0 +1,114 @@
+# @package _global_
+# KnowHyper BioRED pair-existence RE with the GPU-batched cross-attention
+# knowledge integrator. MULTI-TYPE: chemical/gene/disease all link into primekg
+# (drug/protein/disease). BioREDPairCollator emits no _knowledge_examples, so
+# the knowledge pipeline runs on the raw BioREDPairExample; BioREDQueryBuilder
+# reads entities[head_idx] (DB id + type) instead of head_mention/head_type.
+defaults:
+  # Shared mandatory run settings (batch_size/num_workers). FIRST because Hydra
+  # requires `override` entries to be last in a defaults list; `_self_` still
+  # comes after, so this config's own blocks continue to win.
+  - _run_defaults
+  - override /task: biored_pair
+  - override /dataset: biored
+  - override /loss: sequence_cross_entropy
+  - override /metric: biored_f1
+  - override /model: knowledge_aware_pubmedbert_sequence_classifier
+  - override /knowledge: knowhyper
+  - override /knowhyper_encoder: allset
+  - override /knowhyper_retriever: caching
+  - override /knowhyper_integrator: incidence
+  - _self_
+
+dataset:
+  task: biored_pair
+
+task:
+  max_length: 512
+
+metric:
+  negative_label: "false"
+
+model:
+  _target_: knowhyper.ieforge.models.CrossAttentionKnowledgeModel
+  _recursive_: false
+  name: knowhyper_cross_attention
+  tokenizer_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+  hidden_size: 768
+  num_heads: 8
+  feature_dim: 768
+  encoder_layers: 2
+  encoder_heads: 4
+  require_knowledge: true
+  # See khp_re_xattn.yaml: these are the settings every recorded run uses, defaulted
+  # rather than re-typed per command. gate_init=0.0 makes fusion a no-op and turns a
+  # knowledge arm into a silent text-only baseline. Pass it explicitly to ablate.
+  gate_init: 1.0
+  gate_shape: vector
+  fusion_norm: true
+  gate_mlp_enabled: false
+  gate_mlp_init: zeros
+  inner:
+    _target_: ieforge.models.hf_sequence_classifier.HFSequenceClassifier
+    model_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+    name: pubmedbert_seq
+
+knowledge:
+  collator:
+    feature_channels:
+      - _target_: knowhyper.ieforge.channels.IncidenceChannel
+  pipeline:
+    query_builder:
+      _target_: knowhyper.ieforge.biored_query_builder.BioREDQueryBuilder
+      field: text
+      task: biored_pair
+      metadata_fields: [dataset, split, id]
+      include_target_roles: true
+    injector:
+      mention_type_map:
+        ChemicalEntity: drug
+        GeneOrGeneProduct: protein
+        DiseaseOrPhenotypicFeature: disease
+        CHEMICAL: null
+        GENE-Y: null
+        GENE-N: null
+        Drug: null
+      derive_id_namespaces: true
+      linker:
+        strict_type_match: true
+      retriever:
+        # v1 precompute used surface mentions while online BioRED used normalized
+        # DB IDs. This identity forces a clean cache for the aligned ID path.
+        preparation_schema: biored_pair_ids_namespaces_roles_v1
+        provenance_schema: linked_mentions_role_v1
+        inner:
+          provenance_schema: linked_mentions_role_v1
+          semantics_weight:
+            # Suppress tissue-location noise (floods protein seeds)
+            anatomy_protein_present: 0.1
+            anatomy_protein_absent: 0.1
+            # drug-protein (Chem×Gene 13.2%)
+            drug_protein: 5.0
+            regulation: 5.0
+            moa_triad: 3.0
+            # drug-disease (Chem×Disease 14.6%)
+            indication: 3.0
+            contraindication: 3.0
+            off_label_use: 2.0
+            drug_disease_phenotype: 2.0
+            drug_disease_shared_target_bundle: 2.0
+            # disease-protein (Disease×Gene 24.9%)
+            disease_protein: 5.0
+            protein_disease_bundle: 3.0
+            disease_protein_bundle: 3.0
+            # protein-protein (Gene×Gene 39.4%)
+            protein_protein: 3.0
+            protein_complex: 3.0
+            protein_protein_bundle: 2.0
+            # drug-drug (Chem×Chem 7.9%)
+            drug_drug: 3.0
+            drug_combination: 2.0
+            # disease-disease (indirect paths)
+            disease_disease: 2.0
+            disease_phenotype_context: 1.5
+            disease_phenotype_negative: 1.5

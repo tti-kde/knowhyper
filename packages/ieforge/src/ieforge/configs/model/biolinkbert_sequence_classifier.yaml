@@ -1,0 +1,4 @@
+name: biolinkbert_seq
+_target_: ieforge.models.hf_sequence_classifier.HFSequenceClassifier
+model_name: michiyasunaga/BioLinkBERT-base
+tokenizer_name: michiyasunaga/BioLinkBERT-base

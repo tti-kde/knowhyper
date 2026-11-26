@@ -1,0 +1,8 @@
+# @package _global_
+# EV-warm arm. The checkpoint is mandatory so this config cannot run cold.
+defaults:
+  - khp_span_ner_ev
+  - _self_
+
+model:
+  pretrained_encoder_path: ???

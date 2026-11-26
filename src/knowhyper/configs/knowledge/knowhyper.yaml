@@ -1,0 +1,162 @@
+# @package _global_
+defaults:
+  - _text14_pins
+  - /knowhyper_linker: sapbert
+  - /knowhyper_retriever: rule
+  - /knowhyper_encoder: structure_only
+  - /knowhyper_feature_store: single_vector
+  - /knowhyper_integrator: soft_prompt
+  - _self_
+
+knowhyper:
+  # Worktree-independent artifact/cache root. On ABCI this resolves against the
+  # remote HOME, so all jobs for the same user share the cache. Override with
+  # KNOWHYPER_HOME when the home filesystem is not the desired backing store.
+  storage_root: ${oc.env:KNOWHYPER_HOME,${oc.env:HOME}/.knowhyper}
+  subhg_cache_schema_version: 2
+  retrieval_semantics_version: 1
+  # Pinned primehkg rev for cache fingerprinting. Keep in sync with the
+  # primehkg pin in pyproject.toml; do NOT use primehkg.__version__ (stale).
+  primehkg_rev: v0.12.14
+  # PrimeHKG source. Default loads the published build straight from the HF Hub
+  # (the parquet-shard layout), which is what `load_core_dataset(hub_repo_id=...)`
+  # consumes. To use a LOCAL `load_from_disk`-style build instead, set
+  # `knowledge.dataset_path=<dir>` and override `knowledge.dataset` to pass
+  # `path=` instead of `hub_repo_id`/`revision`.
+  dataset_hub_repo: ${oc.env:PRIMEHKG_CORE,nishide-dev/primehkg-core}
+  # HF Hub tag for the DATASET revision. Package v0.12.14 pins core "0.12.13"
+  # (core has no 0.12.14 tag -- the package and the data version differ).
+  #
+  # What 0.12.13 changes vs 0.12.3: topology is byte-identical (137,587 nodes /
+  # 4,983,742 hyperedges) and SYNONYMS became real (drug 0.0% -> 25.9%, protein
+  # 14.3% -> 65.2%, disease 1.8% -> 66.6%, overall 3.5% -> 27.5%).
+  #
+  # ⚠️ That does NOT improve linking for these arms, and it was checked rather
+  # than assumed: on 512 identical ChemProt validation instances the old and new
+  # pins select BYTE-IDENTICAL seed node ids (6/119/387 by seed count). The
+  # `label_embedding_v1` sidecar did grow 291,493 -> 492,490 vectors, but the
+  # fusion arms link with the SapBERT DENSE preset, which embeds surface forms and
+  # does ANN search -- it already resolved `paracetamol` -> DB00316 and `ASA` ->
+  # DB00945 before any synonym existed in the graph. Synonyms are subsumed by dense
+  # matching. (`enable_fuzzy: false` in knowhyper_linker/sapbert.yaml governs
+  # LEXICAL fuzzy matching, not the dense path -- reading it as "exact only" is
+  # what produced a wrong +21.8pt prediction.)
+  #
+  # The upgrade is still worth it for the FEATURES side; see features_revision.
+  dataset_revision: "0.12.13"
+  # Expected build fingerprint for the pinned revision.
+  dataset_fingerprint: ${oc.env:PRIMEHKG_CORE_FINGERPRINT,00e2c7ea123617ab2ab1a8880756255a766ded479261bb37c9610919aa4c9c04}
+  # EV attribute embeddings. 0.12.14 is a large change for the entity-view arms:
+  # node_features_sequence grows 7,164 -> 27,205, and by type the growth is all
+  # PROTEIN (178 -> 20,219, i.e. 0.6% -> 63.1% of the 32,034 protein nodes) while
+  # SMILES is unchanged at 6,950 (87.3% of drug nodes). So every previous
+  # ev_cold/ev_warm measurement had the protein side of attr:sequence essentially
+  # empty -- which matters most on ChemProt, a chemical x protein task.
+  # 0.12.15: restores the smiles/protein attr-node embeddings that 0.12.14 dropped
+  # (primehkg #470). Bumped for the RE arms too -- the key is shared and only
+  # `composite.yaml` reads it, so the RE EV arms had the same dead modalities.
+  # Not in the SubHG fingerprint, so no cache is invalidated; see knowhyper_ner.yaml
+  # for the full note.
+  features_revision: "0.12.15"
+  # 0.12.15's commit. MUST move with features_revision: `test_retrieved_definitions_
+  # config.py::_assert_pin_matches_hub` asks the Hub what `revision` actually resolves to
+  # and fails if the commit is the previous release's. That is precisely the slip it
+  # caught here -- the revision was bumped to 0.12.15 and this was left at 0.12.14's
+  # 1bc14229. The fingerprint below is UNCHANGED because 0.12.15 rebuilt only the derived
+  # node_features_embedding table; inputs_fingerprint is byte-identical (primehkg #470).
+  features_commit: c3cb23f36ec8cae55f56c906b88275a0ae775674
+  features_fingerprint: ${oc.env:PRIMEHKG_FEATURES_FINGERPRINT,71e8bd1e3a64832652c92e199ffd61c48a6a7dcee393a1f31169538c1468008f}
+  # Provenance-bearing raw text is pinned independently from EV embeddings.
+  # Updating this text-only input must not invalidate structure/EV SubHG caches.
+  text_features_revision: "0.12.10"
+  text_features_commit: 79479bbea1c730a1b30a8ba13043e0a93d80c944
+  text_features_fingerprint: ${oc.env:PRIMEHKG_TEXT_FEATURES_FINGERPRINT,${oc.env:PRIMEHKG_FEATURES_FINGERPRINT,bdd66fd006c290fba0f1fdcfa841a00732f6bcdc2d9da467d8fef26c23eb75f2}}
+  text_features_provenance_schema: node_features_text_provenance_v1
+  text_features_registry_sha256: 5f3cfbbeeaa2ae4f4e802dc9011ba12e2b195cc2e6dd0457f353d1db99275a5d
+  # SECOND text pin, for arms that need `synonym_context`.
+  #
+  # It is added ALONGSIDE the 0.12.10 pin rather than replacing it, deliberately.
+  # Every one of these five values feeds the text-serializer fingerprint, so editing
+  # the block above in place would re-fingerprint the RE R2a arms and invalidate their
+  # completed caches -- for a snapshot they neither need nor were measured on. Two
+  # pins is the honest representation: two arms legitimately read two snapshots.
+  #
+  # What 0.12.14 adds: a 16th modality, `synonym_context` (37,817 rows, source_field
+  # `synonyms`), holding pipe-joined surface forms --
+  #   chebi:10033 'DL-warfarin | Zoocoumarin | rac-warfarin | (+-)-warfarin | ...'
+  # Coverage: protein 20,899 / disease 11,372 / chebi 3,482 / drug 2,064. 0.12.10 has
+  # 15 modalities and no synonym field at all, which is why the NER text arm cannot
+  # use it. node_features_text grows 255,556 -> 293,373 rows.
+  #
+  # All five values were read out of the snapshot itself (refs/0.12.14 ->
+  # build_manifest.json inputs_fingerprint, and the parquet's own
+  # provenance_registry_digest), not copied from another pin.
+  # text14_features_* now live in `_text14_pins.yaml` (included via defaults),
+  # so the NER text arms read the same literals instead of a second copy.
+
+knowledge:
+  # Optional local-build path; null means load from the Hub (the default below).
+  # Set knowledge.dataset_path=<dir> AND override knowledge.dataset to use path=.
+  dataset_path: null
+  dataset:
+    _target_: primehkg.load_core_dataset
+    hub_repo_id: ${knowhyper.dataset_hub_repo}
+    revision: ${knowhyper.dataset_revision}
+    expected_fingerprint: ${knowhyper.dataset_fingerprint}
+  pipeline:
+    _target_: ieforge.knowledge.core.pipeline.KnowledgePipeline
+    source:
+      _target_: knowhyper.ieforge.noop.NoOpKnowledgeSource
+    builder:
+      _target_: knowhyper.ieforge.noop.NoOpKnowledgeBuilder
+    retriever:
+      _target_: knowhyper.ieforge.noop.NoOpRetriever
+    # ieforge's generic builder. The RE pair carrier (_REPairKnowledgeExample)
+    # supplies text + head_mention/tail_mention (the REAL surface mentions, not the
+    # masked @CHEMICAL$ marker, which is unlinkable); the collator's metadata view
+    # overlays dataset/split. metadata_fields here become the sub-HG cache instance
+    # key via KnowHyperInjector + InstanceKey.from_metadata.
+    query_builder:
+      _target_: ieforge.knowledge.integration.query_builders.AttributeQueryBuilder
+      field: text
+      entities_fields: [head_mention, tail_mention]
+      # head_type/tail_type carry the entity labels (CHEMICAL/GENE-Y) into
+      # query.metadata so the injector can bias linking by node type. dataset/
+      # split/id remain the instance-key fields (see instance_metadata_fields).
+      metadata_fields: [dataset, split, id, head_type, tail_type]
+    injector:
+      _target_: knowhyper.ieforge.injector.KnowHyperInjector
+      top_k: 64
+      instance_metadata_fields: [dataset, split, id]
+      # Map the ChemProt entity labels to primekg node types so the linker biases
+      # chemical mentions to drug nodes and gene mentions to gene/protein nodes
+      # (needs primehkg node_type_hint support, >=2796c9c). Folded into the cache
+      # fingerprint via caching.yaml linker_id, so changing it forces a recompute.
+      # NB: primekg protein node_ids are `primekg:protein:...`, so the node type is
+      # "protein" (NOT "gene/protein"); mapping GENE-* to "protein" is what matches.
+      mention_type_map:
+        CHEMICAL: drug
+        GENE-Y: protein
+        GENE-N: protein
+      # Stamp Mention.expansion from in-document abbreviations (Schwartz-Hearst); pairs with linker.expansion_fallback. Both must be true to enable the feature.
+      expand_abbreviations: false
+  collator:
+    enabled: true
+    train_enabled: true
+    eval_enabled: true
+    _target_: ieforge.knowledge.integration.collators.KnowledgeCollator
+    pipeline: ${knowledge.pipeline}
+    require_prompts: false
+    feature_channels:
+      - _target_: ieforge.knowledge.channels.features.TensorFeatureChannel
+        specs:
+          # graph_embed channel for a FeatureIntegrator that wants the pooled graph
+          # vector as a batch tensor. (The SoftPromptIntegrator does NOT use feature
+          # channels — it emits prompt_embeds via the prompt payload — so this is
+          # inert on the soft-prompt path, not load-bearing for it.)
+          - {source_key: graph_embed, batch_key: knowledge_graph_embeds, pad_dim: null, required: false}
+          # cross-attention path: node + hyperedge token embeds AND their masks
+          - {source_key: node_embeds, batch_key: knowledge_node_embeds, pad_dim: 0, required: false}
+          - {source_key: node_mask, batch_key: knowledge_node_mask, pad_dim: 0, required: false}
+          - {source_key: hyperedge_embeds, batch_key: knowledge_hyperedge_embeds, pad_dim: 0, required: false}
+          - {source_key: hyperedge_mask, batch_key: knowledge_hyperedge_mask, pad_dim: 0, required: false}

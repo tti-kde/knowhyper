@@ -1,0 +1,136 @@
+# Source-level provenance and licensing registry for raw text evidence.
+#
+# PrimeHKG 0.12.10 mirrors ``license_id`` into ``license_tag`` for complete
+# ``node_features_text`` rows.  KnowHyper still resolves permitted use through
+# this independent, reviewed registry and requires the row metadata to agree.
+# Entries below encode the source-by-source determinations recorded in
+# https://github.com/nishide-dev/knowhyper/issues/115 (reviewed through the
+# PrimeHKG 0.12.10 provenance snapshot on 2026-07-23).
+#
+# NOTE: These determinations are a technical audit of public terms, not legal
+# advice. Final redistribution clearance defers to the operator's institutional
+# DrugBank / source agreements. Anything not listed here fails closed.
+#
+# usage_scope:
+#   allow          - cleared for publishable controlled baselines
+#   internal_only  - usable only in access-restricted (audience=internal) runs
+#   exclude        - never selected
+#   unknown        - never selected (treated as fail-closed)
+#
+# Matching precedence: (source, source_field) > (source, modality) > source-only.
+policy_version: 1
+sources:
+  # --- Open ontology definitions: primary-arm eligible -----------------------
+  # PrimeHKG 0.12.10 marks GO definitions complete and publishable. Keep the
+  # local artifact name in source_release and pin the upstream ontology release
+  # separately so downstream selection must agree with the row provenance.
+  - source: GO
+    source_field: definition
+    payload_class: semantic_definition
+    upstream_source: Gene Ontology
+    upstream_release: releases/2026-03-25
+    license_id: CC-BY-4.0
+    license_url: https://geneontology.org/docs/go-citation-policy/
+    usage_scope: allow
+    redistribution_scope: attribution_required
+    source_release: go_map.tsv
+    reviewed_at: "2026-07-22"
+    notes: "issue #115: PrimeHKG 0.12.10 complete GO definition provenance."
+
+  # PrimeHKG 0.12.10 policy C admits exactly one definition for each of 11,123
+  # disease nodes. Ambiguous nodes remain review_required upstream and fail
+  # closed naturally because their row policy does not agree with this entry.
+  - source: MONDO
+    source_field: definition
+    payload_class: semantic_definition
+    upstream_source: MONDO
+    upstream_release: releases/2026-05-05
+    license_id: CC-BY-4.0
+    license_url: https://mondo.monarchinitiative.org/pages/download/
+    usage_scope: allow
+    redistribution_scope: attribution_required
+    source_release: mondo_map.tsv
+    reviewed_at: "2026-07-23"
+    notes: "issue #115: PrimeHKG 0.12.10 policy C single-definition disease projection."
+
+  # ChEBI definitions are projected to drug entities only through the
+  # unambiguous DrugBank-ChEBI crosswalk retained in the 0.12.10 manifest.
+  - source: chebi
+    source_field: definition
+    payload_class: semantic_definition
+    upstream_source: ChEBI
+    upstream_release: chebi:253
+    license_id: CC-BY-4.0
+    license_url: https://www.ebi.ac.uk/chebi/about/
+    usage_scope: allow
+    redistribution_scope: attribution_required
+    source_release: chebi_definitions.tsv
+    reviewed_at: "2026-07-22"
+    notes: "issue #115: PrimeHKG 0.12.9 complete ChEBI semantic definitions."
+
+  # UniProt Function is a semantic definition; other UniProt/HGNC text remains
+  # a short label and is resolved by the fail-closed entries below.
+  - source: UniProt
+    source_field: Function
+    payload_class: semantic_definition
+    upstream_source: UniProt
+    upstream_release: "2026_02"
+    license_id: CC-BY-4.0
+    license_url: https://www.uniprot.org/help/license
+    usage_scope: allow
+    redistribution_scope: attribution_required
+    source_release: uniprot.tsv
+    reviewed_at: "2026-07-22"
+    notes: "issue #115: PrimeHKG 0.12.9 complete UniProt Function definitions."
+
+  # UniProt names and HGNC symbols are not semantic definitions.
+  - source: HGNC
+    payload_class: short_label
+    license_id: CC0-1.0
+    license_url: https://www.genenames.org/about/license/
+    usage_scope: unknown
+    redistribution_scope: public_domain_attribution_requested
+    source_release: unspecified_pending_snapshot
+    reviewed_at: "2026-07-22"
+    notes: "issue #115: label provenance remains review_required/PENDING."
+  - source: UniProt
+    payload_class: short_label
+    license_id: CC-BY-4.0
+    license_url: https://www.uniprot.org/help/license
+    usage_scope: unknown
+    redistribution_scope: attribution_required
+    source_release: unspecified_pending_snapshot
+    reviewed_at: "2026-07-22"
+    notes: "issue #115: label provenance remains review_required/PENDING."
+  # --- Restricted / provenance-uncertain: internal-only or fail-closed -------
+  - source: PrimeKG
+    source_field: description
+    payload_class: drug_prose
+    upstream_source: DrugBank
+    upstream_release: "5.1.8"
+    license_id: DrugBank-Terms
+    license_url: https://trust.drugbank.com/drugbank-trust-center/terms-of-use
+    usage_scope: internal_only
+    redistribution_scope: prohibited_without_separate_permission
+    source_release: drug_features.tab
+    reviewed_at: "2026-07-20"
+    notes: "issue #115: DrugBank 5.1.8 prose; internal research only, no redistribution."
+  - source: PrimeKG
+    payload_class: mixed_upstream
+    license_id: UNKNOWN
+    license_url: https://github.com/mims-harvard/PrimeKG#license
+    usage_scope: exclude
+    redistribution_scope: prohibited_without_separate_permission
+    source_release: unspecified
+    reviewed_at: "2026-07-20"
+    notes: "issue #115: non-description PrimeKG fields have unverified upstream; fail closed."
+  - source: HPO
+    source_field: definition
+    payload_class: semantic_definition
+    license_id: HPO-Terms
+    license_url: https://human-phenotype-ontology.github.io/license.html
+    usage_scope: internal_only
+    redistribution_scope: attribution_no_modification_pending_confirmation
+    source_release: unspecified_pending_snapshot
+    reviewed_at: "2026-07-20"
+    notes: "issue #115: HPO custom terms (version+ack, no content modification); confirm before publishing."

@@ -1,0 +1,6 @@
+_target_: ieforge.datasets.blurb_ner.BLURBNERDataset
+task: bc5cdr_disease
+name: blurb_ner_bc5cdr_disease
+batch_size: 16
+num_workers: 4
+task_family: ner

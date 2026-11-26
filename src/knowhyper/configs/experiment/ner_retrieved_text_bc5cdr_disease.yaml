@@ -1,0 +1,16 @@
+# @package _global_
+# BC5CDR-Disease variant of the NER text arm. Own retriever profile for the same
+# reason as the gene variant.
+defaults:
+  - ner_retrieved_text
+  - override /dataset: blurb_ner_bc5cdr_disease
+  - override /knowhyper_retriever: caching_ner_disease
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        # Erase the inherited chem key; see the bc2gm variant.
+        Chemical: null
+        Disease: disease

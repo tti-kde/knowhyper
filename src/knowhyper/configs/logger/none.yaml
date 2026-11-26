@@ -1,0 +1,29 @@
+# Disable Lightning logging entirely.
+#
+# ieforge builds the logger from the *top-level* ``logger`` group and hands it to
+# the Trainer (``_hydra_entry.py``)::
+#
+#     logger = instantiate(cfg.logger) if "logger" in cfg and cfg.logger is not None else True
+#     trainer = instantiate(cfg.trainer, logger=logger, accumulate_grad_batches=1)
+#
+# Two consequences drive the shape of this file:
+#
+# 1. ``trainer.logger`` is overridden by that keyword, so ``++trainer.logger=false``
+#    is a no-op and the default CSVLogger is used regardless. Selecting this group
+#    is the only way to opt out.
+# 2. This must instantiate to a plain ``bool``, not to a logger instance. On the
+#    *train* path ``cfg.trainer`` is a structured config, so Hydra routes the
+#    ``logger=`` kwarg through config merging, which refuses a live Python object
+#    (``ConfigTypeError: 'function' object is not subscriptable``, full_key:
+#    logger). A DummyLogger survives the *test* path — a plain kwarg — which makes
+#    the failure look config-specific; it is not. Verified by
+#    ``test_a_logger_object_cannot_be_passed_through_the_train_path``.
+#    ``False`` is exactly what ``Trainer(logger=...)`` takes to mean "no logging".
+#
+# Why bother: the default CSVLogger dies mid-run once a metric key appears that
+# the buffered rows lack (``ValueError: dict contains fields not in fieldnames:
+# 'train/loss_epoch'``) — ``_rewrite_with_new_header`` rewrites already-buffered
+# rows against the new header.
+#
+# Usage: ``logger=none`` (requires ``hydra.searchpath=[pkg://knowhyper.configs]``)
+_target_: builtins.bool

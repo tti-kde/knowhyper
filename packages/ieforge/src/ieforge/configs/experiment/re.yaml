@@ -1,0 +1,7 @@
+# @package _global_
+defaults:
+  - override /task: re_blurb
+  - override /dataset: chemprot
+  - override /model: modernbert_sequence_classifier
+  - override /loss: sequence_cross_entropy
+  - override /metric: relation_f1

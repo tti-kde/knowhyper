@@ -1,0 +1,8 @@
+# @package _global_
+defaults:
+  - span_ner_retrieved_text_ncbi_disease
+  - _self_
+
+knowledge:
+  collator:
+    mention_mode: sham

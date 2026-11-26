@@ -1,0 +1,7 @@
+# MLflow logger configuration
+
+mlflow:
+  _target_: pytorch_lightning.loggers.MLFlowLogger
+  experiment_name: ieforge
+  tracking_uri: file:./mlruns
+  tags: ${tags}

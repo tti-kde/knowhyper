@@ -1,0 +1,7 @@
+# @package _global_
+defaults:
+  - khp_span_late_ev_ncbi_disease
+  - _self_
+
+model:
+  pretrained_encoder_path: ???

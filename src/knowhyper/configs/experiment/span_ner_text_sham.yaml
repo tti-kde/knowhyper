@@ -1,0 +1,16 @@
+# @package _global_
+# #220 content control for span_ner_retrieved_text: mention identity, segment,
+# boundary tags and payload LENGTH preserved; the semantic body becomes [MASK].
+#
+# This is the PRIMARY control, not `text_off`. On NER the source is 25 tokens at the
+# median against a floor of >=253, so truncation never happens and text_off is
+# byte-identical to base (verified to 6 decimals on all 10 seeds of the BIO
+# campaign). text_off therefore cannot separate "the retrieved TEXT helped" from
+# "an extra [SEP] segment helped" or "seeing the entity NAME helped". This arm can.
+defaults:
+  - span_ner_retrieved_text
+  - _self_
+
+knowledge:
+  collator:
+    mention_mode: sham

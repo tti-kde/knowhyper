@@ -1,0 +1,19 @@
+# @package _global_
+# BC2GM (gene NER) entity-view knowledge arm, strict_type_match ON.
+#
+# = khp_ner_ev_bc2gm + strict linking, and it restates the gene retriever profile
+# for the same reason khp_ner_strict_bc2gm does: inheriting a chem arm would put the
+# CHEMICAL profile on a gene dataset silently.
+#
+# Must agree with khp_ner_strict_bc2gm on retrieval -- they share one cache, and the
+# ev-vs-edge contrast is only single-variable if they do.
+defaults:
+  - khp_ner_ev_bc2gm
+  - override /knowhyper_retriever: caching_ner_gene
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      linker:
+        strict_type_match: true

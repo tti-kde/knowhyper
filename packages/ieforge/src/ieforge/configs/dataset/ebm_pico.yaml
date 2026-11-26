@@ -1,0 +1,7 @@
+_target_: ieforge.datasets.blurb_pico.BLURBPICODataset
+task: ebm_pico
+split: train
+name: ebm_pico
+batch_size: 16
+num_workers: 4
+task_family: pico

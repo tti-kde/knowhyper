@@ -1,0 +1,39 @@
+# @package _global_
+defaults:
+  - override /task: biored_pair
+  - override /dataset: biored
+  - override /model: pubmedbert_sequence_classifier
+  - override /loss: sequence_cross_entropy
+  - override /metric: biored_f1
+
+dataset:
+  task: biored_pair
+  batch_size: 16
+
+metric:
+  negative_label: "false"
+
+optimizer:
+  lr: 1e-5
+
+model:
+  model_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract
+  tokenizer_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract
+
+trainer:
+  max_epochs: 10
+  callbacks:
+    - _target_: pytorch_lightning.callbacks.ModelCheckpoint
+      dirpath: ${paths.output_dir}/checkpoints
+      filename: "epoch_{epoch:03d}-${metric.monitor_label}_{${metric.monitor}:.4f}"
+      monitor: ${metric.monitor}
+      mode: ${metric.monitor_mode}
+      save_top_k: 3
+      save_last: true
+      auto_insert_metric_name: false
+    - _target_: pytorch_lightning.callbacks.EarlyStopping
+      monitor: ${metric.monitor}
+      patience: 10
+      mode: ${metric.monitor_mode}
+    - _target_: pytorch_lightning.callbacks.LearningRateMonitor
+      logging_interval: "epoch"

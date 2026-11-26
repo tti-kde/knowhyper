@@ -1,0 +1,17 @@
+# @package _global_
+# BC5CDR-Disease NER with knowledge integration.
+defaults:
+  - khp_ner
+  - override /dataset: blurb_ner_bc5cdr_disease
+  # Disease profile, NOT khp_ner's chemical one. For a disease seed the unweighted
+  # flood is `disease_phenotype_context` (150,317 rows) -- clinical presentation
+  # rather than evidence that a span names a disease.
+  - override /knowhyper_retriever: caching_ner_disease
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Chemical: null
+        Disease: disease

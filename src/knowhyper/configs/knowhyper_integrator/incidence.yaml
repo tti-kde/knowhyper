@@ -1,0 +1,2 @@
+# @package knowledge.pipeline.injector.integrator
+_target_: knowhyper.pipeline.integrators.IncidenceIntegrator

@@ -1,0 +1,3 @@
+_target_: ieforge.losses.bioredirect_multitask.BioREDirectMultiTaskLoss
+name: bioredirect_multitask
+negative_index: 0

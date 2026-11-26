@@ -1,0 +1,7 @@
+_target_: ieforge.datasets.blurb_qa.BLURBQADataset
+task: pubmedqa
+split: train
+name: pubmedqa
+batch_size: 16
+num_workers: 4
+task_family: qa

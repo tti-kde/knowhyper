@@ -1,0 +1,50 @@
+# @package _global_
+#
+# GRAFT-style over PrimeHKG NATURAL TEXT on ChemProt, `real` arm (#189 follow-up B).
+#
+# WHY THIS ARM EXISTS. The screened GRAFT arms serialize the sub-hypergraph as
+# `[HG] semantics=...; role=...; polarity=...` and showed `real - masked` ~= 0 at two
+# evidence budgets, with the encoder demonstrably ABLE to separate real from masked
+# (linear probe 1.000). That leaves the null confounded with the SERIALIZATION FORMAT,
+# which is ours and is not what official GRAFT reads -- official retrieves natural-text
+# snippets. This arm swaps the payload to raw `node_features_text` and changes nothing
+# else, so:
+#
+#   * null disappears -> the problem was the FORMAT (structure does not transfer as text)
+#   * null persists   -> the problem is the FUSION DESIGN, independent of content type
+#
+# NOT a re-run of R2a. R2a concatenated definitions into ONE 512-token sequence; this
+# feeds them to a SECOND ENCODER and mixes logits through the learned gate. The route
+# differs, and route has changed a conclusion on this project before (NER: the same
+# retrieved text was null through cross-attention and positive through input tokens).
+#
+# Inherits re_retrieved_definitions, so the licence registry, provenance schema, retriever
+# profile and payload-class filter are byte-identical to R2a -- only the injection
+# route differs. Needs no new SubHG precompute.
+defaults:
+  - re_retrieved_definitions
+  - _self_
+
+model:
+  _target_: knowhyper.ieforge.models.ParallelTextGatedKnowledgeModel
+  _recursive_: false
+  name: knowhyper_parallel_text_gated
+  tokenizer_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+  hidden_size: 768
+  num_heads: 8
+  gate_bias_init: 0.0
+  fusion_norm: true
+  inner:
+    _target_: ieforge.models.hf_sequence_classifier.HFSequenceClassifier
+    model_name: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext
+    name: pubmedbert_seq
+
+knowledge:
+  collator:
+    _target_: knowhyper.ieforge.parallel_text_collator.ParallelEvidenceKnowledgeCollator
+    evidence_mode: real
+    payload: definitions
+    # Matches the screened GRAFT arms' budget so this contrast is about the payload
+    # TYPE, not the amount. Both keys in lockstep -- the collator rejects a mismatch.
+    max_evidence_tokens: 128
+    max_knowledge_tokens: 128

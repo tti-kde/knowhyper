@@ -1,0 +1,13 @@
+# @package _global_
+# NCBI-Disease extension of the candidate-specific structure arm.
+defaults:
+  - khp_span_ner_edge
+  - override /dataset: blurb_ner_ncbi_disease
+  - override /knowhyper_retriever: caching_ner_disease
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Disease: disease

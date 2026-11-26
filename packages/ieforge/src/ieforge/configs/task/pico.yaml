@@ -1,0 +1,3 @@
+_target_: ieforge.tasks.pico.PICOTask
+name: pico
+max_length: 512

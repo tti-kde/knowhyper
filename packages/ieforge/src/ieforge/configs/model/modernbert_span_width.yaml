@@ -1,0 +1,9 @@
+name: modernbert_span_width
+_target_: ieforge.models.hf_span_classifier.HFSpanClassifier
+model_name: answerdotai/ModernBERT-base
+tokenizer_name: answerdotai/ModernBERT-base
+max_span_width: 12
+dropout: 0.1
+# Boundary words only cannot separate spans sharing a start/end, and carry no
+# signal from the span interior. See Phase 1 of #55.
+span_rep_mode: start_end_width

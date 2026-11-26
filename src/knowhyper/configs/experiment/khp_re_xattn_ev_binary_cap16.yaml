@@ -1,0 +1,12 @@
+# @package _global_
+# ChemProt EV binary 2-section over the same cap-16 evidence as the native arm.
+defaults:
+  - khp_re_xattn_ev_binary
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      retriever:
+        inner:
+          max_hyperedge_size: 16

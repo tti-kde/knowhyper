@@ -1,0 +1,31 @@
+# @package _global_
+# #231 Variant 1: baseline-preserving late-logit span verifier.
+#
+# Identical to `khp_span_ner_ev` except the model: same dataset,
+# retriever profile, loss, metric, batch size and candidate lattice, so the only
+# difference from the #218 arm is the injection site. Keeping the retriever line
+# inherited matters -- it is dataset-specific and selecting the wrong profile
+# composes cleanly while retrieving the wrong graph.
+# Entity-view cold arm matched to khp_span_ner_edge.
+#
+# Topology remains PrimeHKG CORE 0.12.13. Attribute vectors resolve from
+# PrimeHKG FEATURES 0.12.15 through the inherited knowhyper_ner pins.
+defaults:
+  - khp_span_late_edge
+  - override /knowhyper_feature_store: composite
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      entity_view_augmenter:
+        _target_: knowhyper.pipeline.entity_view_augmenter.EntityViewAugmenter
+        index:
+          _target_: knowhyper.pipeline.entity_view_augmenter.build_entity_view_index
+          nodes_iter:
+            _target_: knowhyper.pipeline.entity_view_augmenter.load_core_nodes_iter
+            hub_repo_id: ${knowhyper.dataset_hub_repo}
+            revision: ${knowhyper.dataset_revision}
+            expected_fingerprint: ${knowhyper.dataset_fingerprint}
+          source_fingerprint: ${knowhyper.dataset_fingerprint}
+          skip_modalities: ["name"]

@@ -1,0 +1,6 @@
+_target_: ieforge.datasets.blurb_ner.BLURBNERDataset
+task: jnlpba
+name: blurb_ner_jnlpba
+batch_size: 16
+num_workers: 4
+task_family: ner

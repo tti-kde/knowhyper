@@ -1,0 +1,74 @@
+version: 4
+pass_threshold: 0.95
+node_types:
+  - node_type: drug
+    phase: 1
+    primary_group:
+      - smiles
+      - description
+      - indication
+      - mechanism_of_action
+    stretch_metrics:
+      - smiles_rate
+
+  - node_type: disease
+    phase: 1
+    primary_group:
+      - definition
+      - description
+
+  - node_type: protein
+    phase: 1
+    primary_group:
+      - protein
+      - nucleotide
+      - description
+    stretch_metrics:
+      - sequence_rate
+
+  - node_type: phenotype
+    phase: 1
+    primary_group:
+      - definition
+      - description
+
+  - node_type: effect/phenotype
+    phase: 1
+    primary_group:
+      - definition
+      - description
+
+  - node_type: pathway
+    phase: 2
+    primary_group:
+      - description
+
+  - node_type: anatomy
+    phase: 2
+    primary_group:
+      - description
+
+  - node_type: biological_process
+    phase: 2
+    primary_group:
+      - definition
+
+  - node_type: molecular_function
+    phase: 2
+    primary_group:
+      - definition
+
+  - node_type: cellular_component
+    phase: 2
+    primary_group:
+      - definition
+
+  - node_type: exposure
+    phase: 3
+    primary_group:
+      - description
+
+  - node_type: metabolite
+    phase: 2
+    primary_group:
+      - description

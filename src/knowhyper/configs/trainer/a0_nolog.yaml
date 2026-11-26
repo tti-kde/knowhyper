@@ -1,0 +1,50 @@
+# #233 A0 trainer: `nolog` optimization plus a fail-closed treatment audit.
+#
+# This is intentionally identical to `trainer/nolog` for optimization. The third callback is
+# observational: it proves the text encoder / lexical projection is in the optimizer exactly
+# once, all six anchors are frozen, evidence reaches real candidates, deltas are non-zero, and
+# treatment parameters move after the 100-step warmup. A dead route exits non-zero instead of
+# contributing a plausible F1 to the promotion decision.
+_target_: pytorch_lightning.Trainer
+
+max_epochs: 10
+accelerator: auto
+devices: 1
+precision: bf16-mixed
+accumulate_grad_batches: 1
+fast_dev_run: false
+limit_train_batches: null
+limit_val_batches: null
+# Phase A0/A makes its promotion decision on validation and MUST NOT read test. ieforge calls
+# trainer.test(ckpt_path="best") after fit unconditionally, so this must be zero in the trainer
+# config rather than left to a driver convention.
+limit_test_batches: 0
+
+check_val_every_n_epoch: 1
+val_check_interval: 1.0
+
+log_every_n_steps: 10
+enable_progress_bar: true
+
+callbacks:
+  - _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    dirpath: ${paths.output_dir}/checkpoints
+    filename: "epoch_{epoch:03d}-${metric.monitor_label}_{${metric.monitor}:.4f}"
+    monitor: ${metric.monitor}
+    mode: ${metric.monitor_mode}
+    save_top_k: 1
+    save_last: false
+    auto_insert_metric_name: false
+
+  - _target_: pytorch_lightning.callbacks.EarlyStopping
+    monitor: ${metric.monitor}
+    patience: 5
+    mode: ${metric.monitor_mode}
+
+  - _target_: knowhyper.ieforge.a0_trainability_callback.A0TrainabilityCallback
+    output_dir: ${paths.output_dir}
+    min_train_steps: 150
+    fail_on_dead: true
+
+deterministic: false
+benchmark: true

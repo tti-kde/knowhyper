@@ -1,0 +1,26 @@
+# @package _global_
+# ChemProt Lever B: entity_attribute sub-HG augmentation.
+# Inherits khp_re_xattn (same task/model/retrieval) but:
+#   1. feature_store → composite (routes attr:* nodes to modality embeddings)
+#   2. entity_view_augmenter constructed from the pinned core's entity_view tables
+# Mirrors khp_ddi_xattn_ev for ChemProt (drug_protein pairs).
+defaults:
+  - khp_re_xattn
+  - override /knowhyper_feature_store: composite
+  - _self_
+
+
+knowledge:
+  pipeline:
+    injector:
+      entity_view_augmenter:
+        _target_: knowhyper.pipeline.entity_view_augmenter.EntityViewAugmenter
+        index:
+          _target_: knowhyper.pipeline.entity_view_augmenter.build_entity_view_index
+          nodes_iter:
+            _target_: knowhyper.pipeline.entity_view_augmenter.load_core_nodes_iter
+            hub_repo_id: ${knowhyper.dataset_hub_repo}
+            revision: ${knowhyper.dataset_revision}
+            expected_fingerprint: ${knowhyper.dataset_fingerprint}
+          source_fingerprint: ${knowhyper.dataset_fingerprint}
+          skip_modalities: ["name"]

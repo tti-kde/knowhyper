@@ -1,0 +1,14 @@
+# @package _global_
+# #231 Variant 1: baseline-preserving late-logit span verifier.
+#
+# Identical to `khp_span_ner_ev_warm_bc2gm` except the model: same dataset,
+# retriever profile, loss, metric, batch size and candidate lattice, so the only
+# difference from the #218 arm is the injection site. Keeping the retriever line
+# inherited matters -- it is dataset-specific and selecting the wrong profile
+# composes cleanly while retrieving the wrong graph.
+defaults:
+  - khp_span_late_ev_bc2gm
+  - _self_
+
+model:
+  pretrained_encoder_path: ???

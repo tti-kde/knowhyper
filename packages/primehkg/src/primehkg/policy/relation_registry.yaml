@@ -1,0 +1,150 @@
+version: 1
+relations:
+  - relation: anatomy_anatomy
+    status: active
+    notes: "registry_atomic kg_atomic; anatomy hierarchy (uncapped 0.2.2+)."
+
+  - relation: anatomy_protein_absent
+    status: active
+    notes: "registry_atomic kg_atomic (negative); canonical protein→anatomy (uncapped 0.2.2+)."
+
+  - relation: anatomy_protein_present
+    status: active
+    notes: "registry_atomic kg_atomic; canonical protein→anatomy (uncapped 0.2.2+; PrimeKG ~3M rows)."
+
+  - relation: bioprocess_bioprocess
+    status: active
+    notes: "registry_atomic kg_atomic; GO biological_process term edges (uncapped 0.2.2+)."
+
+  - relation: bioprocess_protein
+    status: active
+    notes: "registry_atomic kg_atomic; canonical protein→biological_process (uncapped 0.2.2+)."
+
+  - relation: cellcomp_cellcomp
+    status: active
+    notes: "registry_atomic kg_atomic; GO cellular_component term edges (uncapped 0.2.2+)."
+
+  - relation: cellcomp_protein
+    status: active
+    notes: "registry_atomic kg_atomic; canonical protein→cellular_component (uncapped 0.2.2+)."
+
+  - relation: molfunc_molfunc
+    status: active
+    notes: "registry_atomic kg_atomic; GO molecular_function term edges (uncapped 0.2.2+)."
+
+  - relation: molfunc_protein
+    status: active
+    notes: "registry_atomic kg_atomic; canonical protein→molecular_function (uncapped 0.2.2+)."
+
+  - relation: contraindicated
+    status: deprecated_alias
+    maps_to: contraindication
+    notes: "PrimeKG may use this string; normalize internally to contraindication."
+
+  - relation: contraindication
+    status: active
+    notes: "Wave1 bundle disease context edge (negative)."
+
+  - relation: disease_disease
+    status: active
+    notes: "registry_atomic kg_atomic; disease–disease (uncapped 0.2.2+)."
+
+  - relation: disease_phenotype_negative
+    status: active
+    notes: "registry_atomic kg_atomic kg_atomic (negative disease-phenotype assertion); v0 phenotype still uses positive context only."
+
+  - relation: disease_phenotype_positive
+    status: active
+    notes: "Phenotype builder only; emitted as canonical size-2 kg_atomic semantics with reverse source rows preserved in support."
+
+  - relation: disease_protein
+    status: active
+    notes: "Wave1 bundle join edge (disease associates protein)."
+
+  - relation: drug_combination
+    status: active
+    notes: "curated_db; DrugComb drug-pair synergy aggregated across cell lines (size-2, roles both combination_member; polarity positive=synergy / negative=antagonism / unknown by median ZIP +/-5). Built when --drugcomb-summary-tsv / --drugcomb-identifiers-tsv are supplied (required under the primehkg profile)."
+
+  - relation: drug_drug
+    status: active
+    notes: "registry_atomic kg_atomic; drug–drug (uncapped 0.2.2+)."
+
+  - relation: drug_effect
+    status: active
+    notes: "Phenotype builder only; emitted as canonical size-2 kg_atomic semantics with reverse source rows preserved in support."
+
+  - relation: drug_protein
+    status: active
+    notes: "Wave1 bundle join edge (drug targets protein); STITCH chemical-protein (opt-in stitch segment, undirected, scored)."
+
+  - relation: exposure_bioprocess
+    status: active
+    notes: "registry_atomic kg_atomic; canonical exposure→biological_process (uncapped 0.2.2+)."
+
+  - relation: exposure_cellcomp
+    status: active
+    notes: "registry_atomic kg_atomic; canonical exposure→cellular_component (uncapped 0.2.2+)."
+
+  - relation: exposure_disease
+    status: active
+    notes: "registry_atomic kg_atomic; canonical exposure→disease (uncapped 0.2.2+)."
+
+  - relation: exposure_exposure
+    status: active
+    notes: "registry_atomic kg_atomic; exposure→exposure (uncapped 0.2.2+)."
+
+  - relation: exposure_molfunc
+    status: active
+    notes: "registry_atomic kg_atomic; canonical exposure→molecular_function (uncapped 0.2.2+)."
+
+  - relation: exposure_protein
+    status: active
+    notes: "registry_atomic kg_atomic; canonical exposure→protein (uncapped 0.2.2+)."
+
+  - relation: indication
+    status: active
+    notes: "Wave1 bundle disease context edge (positive)."
+
+  - relation: "off-label use"
+    status: active
+    notes: "registry_atomic kg_atomic kg_atomic; canonical drug→disease off-label use; distinct from indication."
+
+  - relation: pathway_pathway
+    status: active
+    notes: "registry_atomic kg_atomic kg_atomic; pathway hierarchy (uncapped 0.2.2+); Reactome composed facts preferred where available."
+
+  - relation: pathway_protein
+    status: active
+    notes: "registry_atomic kg_atomic; canonical protein→pathway (uncapped 0.2.2+); Reactome composed preferred where available."
+
+  - relation: phenotype_phenotype
+    status: active
+    notes: "registry_atomic kg_atomic kg_atomic; HPO phenotype hierarchy (uncapped 0.2.2+)."
+
+  - relation: phenotype_protein
+    status: active
+    notes: "registry_atomic kg_atomic; canonical protein→phenotype (uncapped 0.2.2+)."
+
+  - relation: protein_complex
+    status: active
+    notes: "curated_db kg_composed; CORUM + Complex Portal protein complexes (size>=2, all roles=protein); built when --corum-tsv / --complexportal-tsv are supplied (required under the primehkg profile). Source-independent he_id: identical member sets across sources dedupe and merge their support.sources."
+
+  - relation: protein_protein
+    status: active
+    notes: "Wave3 protein_protein_bundle join edge (star-from-anchor, capped)."
+
+  - relation: reaction_event
+    status: active
+    notes: "curated_db kg_composed; Reactome reactions with input/output/catalyst/regulator/cofactor roles over protein + ChEBI metabolite participants; built only when --reactome-tsv is supplied (required under the primehkg profile)."
+
+  - relation: regulation
+    status: active
+    notes: "curated_db; SIGNOR signed/directional regulation (size-2; roles regulator/regulated; polarity up/down/unknown over protein + ChEBI participants); built when --signor-tsv is supplied. Also CTD curated chemical→gene directed regulation (size-2; roles regulator/regulated; polarity from increases/decreases, conflict→unknown; existing-node-only) built when --ctd-tsv is supplied — both required under the primehkg profile (opt out per source via --exclude-segments signor / ctd)."
+
+  - relation: variant_disease
+    status: active
+    notes: "curated_db; ClinVar variant->disease (size-2, roles variant/disease; polarity positive=pathogenic / negative=benign). Built when --clinvar-tsv is supplied (required under the primehkg profile)."
+
+  - relation: variant_gene
+    status: active
+    notes: "curated_db; ClinVar variant->gene (size-2, roles variant/gene; polarity unknown). Built when --clinvar-tsv is supplied (required under the primehkg profile)."

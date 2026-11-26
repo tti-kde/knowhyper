@@ -1,0 +1,16 @@
+# @package _global_
+# bc5cdr_disease variant of span_ner_text_sham. Retrieval semantics are a DATASET property: this
+# profile must match what #218's edge arm for bc5cdr_disease uses, or the two routes read
+# different graphs and Table 6's comparison is void.
+defaults:
+  - span_ner_text_sham
+  - override /dataset: blurb_ner_bc5cdr_disease
+  - override /knowhyper_retriever: caching_ner_disease
+  - _self_
+
+knowledge:
+  pipeline:
+    injector:
+      mention_type_map:
+        Chemical: null
+        Disease: disease

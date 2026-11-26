@@ -1,0 +1,39 @@
+# BioLinkBERT span-level knowledge verifier (#218 second backbone).
+#
+# Field-identical to knowhyper_span_cross_attention_pubmedbert.yaml except for the
+# encoder checkpoint. The two must stay identical everywhere else: the campaign
+# reads `+attributes - Structure only` and `real - shuffled` WITHIN a backbone, so
+# a fusion hyperparameter that differs across backbones would confound the
+# between-backbone comparison with an architecture change.
+#
+# `tokenizer_name` (outer, used by the collator) and `inner.model_name` (the
+# encoder) must name the SAME checkpoint. Mixing a PubMedBERT tokenizer with a
+# BioLinkBERT encoder composes cleanly and trains to a plausible score, so this
+# pair is pinned by tests/ieforge/test_span_knowledge_backbones.py.
+#
+# Candidate JSONL is backbone-specific and must NOT be shared with the PubMedBERT
+# arm: the proposal distribution comes from a BioLinkBERT first pass.
+_target_: knowhyper.ieforge.span_knowledge_model.SpanCrossAttentionKnowledgeModel
+_recursive_: false
+name: knowhyper_span_cross_attention
+tokenizer_name: michiyasunaga/BioLinkBERT-base
+hidden_size: 768
+num_heads: 8
+feature_dim: 768
+encoder_layers: 2
+encoder_heads: 4
+require_knowledge: true
+require_knowledge_per_instance: false
+gate_init: 1.0
+gate_shape: vector
+fusion_norm: true
+conditional_gate: true
+conditional_gate_bias: -2.0
+knowledge_control: real
+inner:
+  _target_: ieforge.models.hf_span_classifier.HFSpanClassifier
+  model_name: michiyasunaga/BioLinkBERT-base
+  name: biolinkbert_span
+  max_span_width: 12
+  span_rep_mode: start_end
+  dropout: 0.1

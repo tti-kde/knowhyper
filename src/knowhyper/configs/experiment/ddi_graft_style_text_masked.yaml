@@ -1,0 +1,14 @@
+# @package _global_
+#
+# Exact-token-count control for `ddi_graft_style_text_real` (#189 follow-up B).
+#
+# Differs in `evidence_mode` and nothing else. The masked arm builds the REAL token
+# sequence first and then replaces every non-special token with [MASK], so the pair is
+# matched per instance on length, retained-item count and special-token positions.
+defaults:
+  - ddi_graft_style_text_real
+  - _self_
+
+knowledge:
+  collator:
+    evidence_mode: masked

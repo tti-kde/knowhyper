@@ -1,0 +1,4 @@
+_target_: ieforge.models.hf_sequence_regressor.HFSequenceRegressor
+model_name: answerdotai/ModernBERT-base
+name: modernbert_seq_reg
+tokenizer_name: answerdotai/ModernBERT-base

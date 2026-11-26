@@ -1,0 +1,7 @@
+_target_: ieforge.datasets.blurb_doc_cls.BLURBDocClsDataset
+task: hoc
+split: train
+name: hoc
+batch_size: 16
+num_workers: 4
+task_family: doc_cls
